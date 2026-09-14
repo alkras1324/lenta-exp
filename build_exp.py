@@ -1,6 +1,6 @@
-import json, urllib.parse, sys
+import json, urllib.parse, sys, os
 TPL = r'D:\Работа\ИИ\roma4u\.claude\worktrees\feed-3267-debug\docs\design\prototypes\feed\index.template.html'
-OUT = r'C:\Users\yanus\AppData\Local\Temp\claude\D------------roma4u\17178288-9cee-4545-a253-d9bf8eb5f2c6\scratchpad\lenta-exp.html'
+OUT = r'C:\Users\yanus\AppData\Local\Temp\claude\D------------roma4u\c46718c0-fb1f-440f-be6f-0bb617195067\scratchpad\lenta-exp\index.html'
 html = open(TPL, encoding='utf-8').read()
 colors = ['#c0392b','#8e44ad','#2980b9','#16a085','#d35400','#27ae60','#7f8c8d','#e84393','#f39c12','#34495e']
 def svg(i, c):
@@ -15,6 +15,16 @@ def svg(i, c):
 bq = [{'name': f'Букет {i}', 'desc': f'Экспериментальная карточка {i}', 'tags': ['тест'],
        'photos': [{'src': svg(i, colors[i-1]), 'type': 'photo'}],
        'sizes': [{'n': 25, 'cm': 60, 'price': 5900}]} for i in range(1, 11)]
+# чётные карточки — с роликом (живые ролики с media.neromashka.ru, CORS *)
+VIDS = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vids.json'), encoding='utf-8'))
+for k, i in enumerate((2, 4, 6, 8)):
+    bq[i-1]['photos'] = [VIDS[k]] + bq[i-1]['photos']
+    bq[i-1]['name'] = f'Букет {i} · видео'
+POS_OLD = 'const позицияЛенты=()=>{ const h=высотаСлайда(); return окноОт+(h?ПРОКРУТЧИК.scrollTop/h:0); };'
+POS_NEW = ('const позицияЛенты=()=>{ const h=высотаСлайда(); if(!h) return окноОт; '
+           'let E=0; try{ if(ДОКПРОКРУТКА&&matchMedia("(hover:none) and (pointer:coarse)").matches) E=Math.max(0,(h-innerHeight)/2); }catch(e){} '
+           'return окноОт+(ПРОКРУТЧИК.scrollTop-E)/h; };')
+assert POS_OLD in html; html = html.replace(POS_OLD, POS_NEW)
 assert '/*__DATA__*/{}' in html and '<script src="data.js"></script>' in html
 html = html.replace('/*__DATA__*/{}', json.dumps({'bouquets': bq}, ensure_ascii=False))
 html = html.replace('<script src="data.js"></script>', '')
@@ -79,6 +89,13 @@ DIAG = r'''
     if(/Chrome/.test(u)) return 'Chrome';
     return 'другое';
   }
+  function vstate(){
+    try{
+      const f=k=>{const s=слайдПо(k);const v=s&&s.querySelector('video.fg[src]');
+        return v?(v.paused?'пауза':'ИГРАЕТ')+' '+v.currentTime.toFixed(1):'—';};
+      return 'тек '+f(idx)+' · след '+f(idx+1);
+    }catch(e){return '-';}
+  }
   function draw(){
     try{
       const vv=window.visualViewport||{};
@@ -98,7 +115,8 @@ DIAG = r'''
         'safe t/b   '+h('p-sat')+' / '+h('p-sab')+'\n'+
         'scrollY    '+R(scrollY)+'\n'+
         'docH       '+d.scrollHeight+'\n'+
-        'idx        '+ix+'\n'+
+        'idx        '+ix+'  поз '+(typeof позицияЛенты==='function'?R(позицияЛенты()*1000)/1000:'-')+'\n'+
+        'видео      '+vstate()+'\n'+
         'slide top  '+st+'\n'+
         'slide h    '+sh+'\n'+
         'slide bot  '+sb+'\n'+
