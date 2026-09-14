@@ -78,6 +78,8 @@ DIAG = r'''
       'html.docscroll.xglass .slide:not(.hero) .cap{--окно-добор:calc('+H+' - '+T+' - 100dvh)!important}'+
       'html.docscroll .slide:not(.xcur) .cap{opacity:0!important;visibility:hidden!important}}'+
       ':root{--cap-добор:0px!important}'+
+      /* узкое окно ПК: стрелки листания стояли на 24% — прямо на рельсе; ставим над ним */
+      '@media (hover:hover) and (pointer:fine) and (max-width:819.98px),(hover:hover) and (pointer:fine) and (max-height:519.98px){.feednav{top:auto!important;bottom:auto!important;top:calc(50% - 250px)!important;transform:translateY(-100%)!important}}'+
       /* подложка под роликом — постер; размыт как видео-подложка, а не на 2px, иначе читается резкой «заставкой» крупнее ролика */
       '.photo.boxy:has(video.fg) .bg>img{filter:blur(30px) brightness(.82) saturate(1.2)!important}'+
       '.slide .cap{transition:opacity .25s ease}body.swiping .slide .cap{opacity:0!important}'+
