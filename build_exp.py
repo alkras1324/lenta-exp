@@ -88,7 +88,7 @@ DIAG = r'''
       /* подпись прибита к кнопкам, а не к картинке: стоит на месте, при листании только гаснет */
       'html.docscroll.xglass .slide:not(.hero) .cap{--окно-добор:calc('+H+' - '+T+' - 100dvh)!important}'+
       'html.docscroll .slide:not(.xcur) .cap{opacity:0!important;visibility:hidden!important}}'+
-      ':root{--cap-добор:0px!important}'+
+      'html.xglass{--cap-добор:0px!important}'+
       /* узкое окно ПК: стрелки листания левее рельса, а не на нём */
       '@media (hover:hover) and (pointer:fine) and (max-width:819.98px),(hover:hover) and (pointer:fine) and (max-height:519.98px){.feednav{right:86px!important}}'+
       /* подложка под роликом — постер; размыт как видео-подложка, а не на 2px, иначе читается резкой «заставкой» крупнее ролика */
