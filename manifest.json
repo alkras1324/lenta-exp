@@ -1,7 +1,7 @@
 {
  "name": "Лента-опыт",
  "short_name": "Лента-опыт",
- "start_url": "./",
+ "start_url": "./index.html",
  "display": "standalone",
  "orientation": "portrait",
  "background_color": "#0c0a09",
@@ -17,7 +17,5 @@
    "sizes": "512x512",
    "type": "image/png"
   }
- ],
- "scope": "./",
- "id": "/lenta-exp/"
+ ]
 }
