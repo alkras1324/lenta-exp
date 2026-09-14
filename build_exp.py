@@ -79,6 +79,27 @@ assert 'apple-mobile-web-app-status-bar-style' in html, 'в шаблоне не�
 assert html.count(РАМА_OLD) == 1, 'рама кадра'
 html = html.replace(РАМА_OLD, """      return shot.clientHeight;   /* опыт: рама по карточке, 956 */""")
 
+# ═══ ОПЫТ 15.09.2026, 00:05 — РАЗЛОЖИТЬ ЗАБРАННОЕ НА ВЕРХ И НИЗ ════════════
+# Мысль владельца: `safe-area-inset-bottom` — это полоска «домой», и она видна ТОЛЬКО
+# когда нижней панели Safari нет. Значит она и есть недостающая линейка:
+#   * safe_b > 0  → снизу забрано ровно safe_b, всё остальное забрано сверху,
+#                   и подъём карточки = (забрано − safe_b) − часы;
+#   * safe_b = 0  → нижняя панель на месте, её высоту узнать нечем. Тогда подъём 0:
+#                   карточка идёт от кромки окна вниз, щели сверху нет, а низ уходит
+#                   под панель, где всё равно ничего не видно.
+# Сверка с замерами владельца: при забрано 109 и safe_b 34 выходит подъём 13, то есть
+# верх карточки встаёт на 62-ю точку экрана — ровно под часами. Прежняя формула давала
+# 47 и промахивалась.
+ПОДЪЁМ_OLD = """        const T=Math.max(0, Math.round(screen.height-окно-часы));"""
+assert html.count(ПОДЪЁМ_OLD) == 1, 'формула подъёма'
+html = html.replace(ПОДЪЁМ_OLD, """        const низ=(()=>{ try{
+          const d=document.createElement('div');
+          d.style.cssText='position:absolute;top:0;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none';
+          (document.body||document.documentElement).appendChild(d);
+          const v=d.offsetHeight; d.remove(); return v;
+        }catch(e){ return 0; } })();
+        const T=низ>0 ? Math.max(0, Math.round(screen.height-окно-низ-часы)) : 0;""")
+
 assert '/*__DATA__*/{}' in html and '<script src="data.js"></script>' in html
 html = html.replace('/*__DATA__*/{}', json.dumps({'bouquets': bq}, ensure_ascii=False))
 html = html.replace('<script src="data.js"></script>', '')
