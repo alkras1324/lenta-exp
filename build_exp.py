@@ -109,7 +109,7 @@ DIAG = r'''
       /* контейнер не гасим (иначе стекло кнопок пропадает и впрыгивает третьим шагом) —
          гаснет каждая кнопка сама: два состояния, стекло цело */
       '#feedacts{transition:none!important}body.swiping #feedacts{opacity:1!important}'+
-      '#feedacts .rail button,#feedacts .acts button,.tabbar{transition:opacity .3s ease!important}'+
+      '#feedacts .rail button,#feedacts .acts button,.tabbar,#feedacts .rail button *,#feedacts .acts button *,.tabbar *{transition:none!important}'+
       'body.swiping #feedacts .rail button,body.swiping #feedacts .acts button,body.swiping .tabbar{opacity:.34!important}';
     document.head.appendChild(st);
   }catch(e){}
