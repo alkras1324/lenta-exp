@@ -23757,11 +23757,14 @@ document.addEventListener('keydown',e=>{
     const H=screen.height+'px', E='('+H+' - 100dvh)';
     st.textContent=
       /* карточка = окно + 2 × запас; запас = screen − окно (закрывает зоны часов и нижней строки) */
-      '.feed .slide,html.docscroll .slide{height:calc(100dvh + 2 * '+E+')!important;'+
+      /* только телефон с прокруткой документом: на десктопе карточка в рамке, панелей поверх нет */
+      '@media (hover:none) and (pointer:coarse){'+
+      'html.docscroll .slide{height:calc(100dvh + 2 * '+E+')!important;'+
       /* снап останавливает по видимой середине: отрицательные поля на запас */
       'scroll-margin-top:calc(-1 * '+E+')!important;scroll-margin-bottom:calc(-1 * '+E+')!important}'+
       /* подпись поднимается на запас, чтобы стоять над «Купить» */
-      ':root{--окно-добор:calc'+E+'!important;--cap-добор:0px!important}'+
+      'html.docscroll{--окно-добор:calc'+E+'!important}}'+
+      ':root{--cap-добор:0px!important}'+
       '.slide .cap{transition:opacity .25s ease}body.swiping .slide .cap{opacity:0!important}'+
       /* кнопки и таблетка — одно состояние: не гаснут при листании, стекло не пропадает */
       /* контейнер не гасим (иначе стекло кнопок пропадает и впрыгивает третьим шагом) —
