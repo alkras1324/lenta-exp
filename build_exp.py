@@ -138,6 +138,14 @@ DIAG = r'''
          Обвязку не трогаем вовсе — кнопки, подпись и таблетка остаются по видимому
          окну, что бы браузер ни забрал сверху и снизу. */
       '@media (hover:none) and (pointer:coarse){'+
+      /* СНАЧАЛА СНИМАЕМ CONTAINMENT С ТЕКУЩЕЙ КАРТОЧКИ, ИНАЧЕ `fixed` НЕ РАБОТАЕТ.
+         У `.slide` стоит `content-visibility:auto` — это paint-containment, и
+         фиксированный потомок привязывается к самой карточке, а не к экрану.
+         Первый заход этого не учёл: владелец увидел ровно то же, что и до правки
+         («картинки не на весь экран»). */
+      'body:not(.swiping) .feed .slide.xcur{content-visibility:visible!important;'+
+        'contain:none!important;overflow:visible!important}'+
+      'body:not(.swiping) .feed .slide.xcur .photos{overflow:visible!important}'+
       'body:not(.swiping) .feed .slide.xcur .photo{position:fixed!important;left:0!important;'+
         'right:0!important;top:0!important;bottom:auto!important;width:100%!important;'+
         'height:100vh!important;z-index:1!important}}';
