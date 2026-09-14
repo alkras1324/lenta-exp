@@ -12620,7 +12620,7 @@ function подогнатьКадрирование(el){
     /* Слово за `.fg`: постер — его дубль, и если они разойдутся, кадрирование
        начнёт зависеть от того, что успело загрузиться первым. */
     if(!свои&&shot.__рамкаОтFg) return;
-    const рама=shot.clientWidth/((ДОКПРОКРУТКА&&document.documentElement.classList.contains("xglass"))?Math.min(shot.clientHeight,innerHeight):shot.clientHeight); if(!рама||!isFinite(рама)) return;
+    const рама=shot.clientWidth/((ДОКПРОКРУТКА&&document.documentElement.classList.contains("xglass"))?Math.min(shot.clientHeight,(window.__xH||(window.__xH=(()=>{const d=document.createElement("div");d.style.cssText="position:absolute;top:0;height:100lvh;visibility:hidden";document.body.appendChild(d);const v=d.offsetHeight;d.remove();return v||innerHeight;})()))):shot.clientHeight); if(!рама||!isFinite(рама)) return;
     shot.__кадр=[w,h];                       // пригодится при повороте экрана
     if(свои) shot.__рамкаОтFg=true;
     применитьКадрирование(shot,w/h,рама,w);
@@ -12657,7 +12657,7 @@ addEventListener('resize',()=>{
     try{
       document.querySelectorAll('.photo').forEach(shot=>{
         const d=shot.__кадр; if(!d) return;
-        const рама=shot.clientWidth/((ДОКПРОКРУТКА&&document.documentElement.classList.contains("xglass"))?Math.min(shot.clientHeight,innerHeight):shot.clientHeight); if(!рама||!isFinite(рама)) return;
+        const рама=shot.clientWidth/((ДОКПРОКРУТКА&&document.documentElement.classList.contains("xglass"))?Math.min(shot.clientHeight,(window.__xH||(window.__xH=(()=>{const d=document.createElement("div");d.style.cssText="position:absolute;top:0;height:100lvh;visibility:hidden";document.body.appendChild(d);const v=d.offsetHeight;d.remove();return v||innerHeight;})()))):shot.clientHeight); if(!рама||!isFinite(рама)) return;
         применитьКадрирование(shot,d[0]/d[1],рама,d[0]);
       });
     }catch(e){}
