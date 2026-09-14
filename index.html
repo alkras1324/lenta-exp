@@ -2171,14 +2171,22 @@
   body.swiping #feedacts .acts button,
   body.swiping .tabbar{transition:none;}
   #feedacts .rail button *,#feedacts .acts button *,.tabbar *{transition:none;}
-  /* ГАСИМ В НОЛЬ, А НЕ В ТРЕТЬ (владелец 14.09.2026: «контролы могут исчезнуть
-     совсем, не просто стать полупрозрачными, если надо»). Полупрозрачная кнопка
-     на листании — всё ещё объект на кадре; ноль оставляет на экране только кадр,
-     ради чего приглушение и заводили. Заодно это развязывает руки доводке
-     позиции: пока интерфейса нет, её движение не читается как рывок. */
+  /* ГАСИМ ДО ТРЕТИ, А НЕ В НОЛЬ — И ЭТО ОТКАТ СОБСТВЕННОЙ ПРАВКИ ЗА ТОТ ЖЕ ВЕЧЕР.
+     Владелец разрешил: «контролы могут исчезнуть совсем, не просто стать
+     полупрозрачными». Попробовали — и через полчаса он же спросил: «куда делись
+     кнопки??», а `bottom_bar_check` показал таблетку с нулевой непрозрачностью.
+
+     Причина не в самом нуле. Признак «лента едет» изредка залипает: его снимает
+     таймер, который перезаводится каждым событием прокрутки, а события шлёт и
+     сама страница — при инициализации и при доводке позиции. Пока приглушение
+     было до трети, залипание читалось как «интерфейс потускнел» и никому не
+     мешало. С нулём та же секунда означает «кнопок нет вовсе».
+
+     Ноль вернём, когда признак перестанет залипать, — не раньше. Цена ошибки
+     тут не косметическая: человек не видит, чем купить. */
   body.swiping #feedacts .rail button,
   body.swiping #feedacts .acts button,
-  body.swiping .tabbar{opacity:0;}
+  body.swiping .tabbar{opacity:.34;}
   @media (prefers-reduced-motion:reduce){
     body.swiping .tabbar{opacity:1;}
     body.swiping #feedacts{opacity:1;}
@@ -6843,7 +6851,7 @@ function liveShots(slide){
   const sh=slide&&currentShot(slide);
   return sh?[sh]:[];
 }
-let ПРОШЛАЯПОЗ=0, ОСЕСТЬ=null, ВЕРНУТЬ=null;
+let ПРОШЛАЯПОЗ=0, ОСЕСТЬ=null, ВЕРНУТЬ=null, ДОСЫЛКА=0;
 let ЛЕНТАЕДЕТ=false;
 /* Задержка «отмирания» в миллисекундах — от остановки ленты до первого
    двинувшегося кадра. Читается в замерах и в самопрогоне. */
@@ -10474,6 +10482,13 @@ function переложитьНаСлайд(){
        1.0586 вместо 1). Выключать было нечего — надо было целиться в другую точку. */
     const цель=document.documentElement.classList.contains('xglass') ? -(window.__xT||0) : 0;
     if(Math.abs(r.top-цель)<2) return;           // уже на месте
+    /* ПОМЕЧАЕМ ДОСЫЛКУ КАК СВОЮ — ИНАЧЕ ЛЕНТА СЧИТАЕТ ЕЁ НОВЫМ ЖЕСТОМ.
+       Браузер шлёт `scroll` на любое изменение позиции, в том числе на наше
+       собственное. Без метки выходил круг: доводим позицию → приходит событие →
+       лента объявляет «едем» и прячет кнопки → останавливается → доводим снова.
+       Это и есть мигание тулбаров, которое видел владелец, и та же причина
+       уронила `bottom_bar_check` (таблетка с нулевой непрозрачностью). */
+    ДОСЫЛКА=Date.now();
     ПРОКРУТЧИК.scrollTop=ПРОКРУТЧИК.scrollTop+(r.top-цель);
   }catch(e){}
 }
@@ -10502,14 +10517,43 @@ try{
     window.visualViewport.addEventListener('scroll',()=>{ переложитьНаСлайд(); окноДобор(); выровнятьПодпись(); },{passive:true});
   }
 }catch(e){}
+/* `dvh` Safari пересчитывает ПОСЛЕ того, как визуальный вьюпорт уже сменился:
+   в момент события окна слайд ещё старой высоты, и доборы считаются от него.
+   Досчитать, когда слайд встал в новую высоту, может только наблюдатель за
+   самим слайдом — иначе остаётся хвост добора и подпись уезжает. */
+try{
+  if(window.ResizeObserver&&feed){
+    let наблюдаемый=null;
+    const ro=new ResizeObserver(()=>{ окноДобор(); выровнятьПодпись(); });
+    const следить=()=>{ const s=feed.firstElementChild;
+      if(s&&s!==наблюдаемый){ if(наблюдаемый) ro.unobserve(наблюдаемый); ro.observe(s); наблюдаемый=s; } };
+    следить(); new MutationObserver(следить).observe(feed,{childList:true});
+  }
+}catch(e){}
 const ЗАЗОР_НАДО=13;
 function выровнятьПодпись(){
   try{
+    /* Слайд РАВЕН видимому окну (на телефоне это `dvh`) — зазор сходится по
+       построению, добирать нечего. Решаем по геометрии, а не по типу
+       устройства: там, где слайд всё-таки выше окна (старый iOS без `dvh`,
+       миг до пересчёта `dvh`), подгонка ниже нужна по-прежнему. */
+    if(document.documentElement.classList.contains('docscroll')){
+      const s=feed&&feed.firstElementChild, h=s?s.offsetHeight:0;
+      const окно=(window.visualViewport&&window.visualViewport.height)||innerHeight;
+      if(h&&Math.abs(h-окно)<1){ document.documentElement.style.setProperty('--cap-добор','0px'); return; }
+    }
     const з=зазорПодписи();
     if(з===null) return;
+    /* ПОДПИСЬ УПОЛЗАЛА ВВЕРХ (владелец 14.09.2026: «куда уезжает надпись»).
+       Подгонка накопительная: `было + (13 − з)`. Если мерили подпись, которая
+       сейчас не раскладывается (слайд вне экрана), её зазор не отвечал на добор
+       — и добор рос на каждой прокрутке без конца. Поэтому мерим только ту, что
+       на экране, и держим добор в разумном потолке. */
+    const сл=(typeof слайдПо==='function')&&слайдПо(idx);
+    if(сл){ const r=сл.getBoundingClientRect(); if(r.bottom<=0||r.top>=innerHeight) return; }
     const корень=document.documentElement;
     const было=parseFloat(getComputedStyle(корень).getPropertyValue('--cap-добор'))||0;
-    const надо=Math.max(0, было + (ЗАЗОР_НАДО - з));
+    const надо=Math.min(Math.round(innerHeight/3), Math.max(0, было + (ЗАЗОР_НАДО - з)));
     if(Math.abs(надо-было)>=1) корень.style.setProperty('--cap-добор', Math.round(надо)+'px');
   }catch(e){}
 }
@@ -22715,6 +22759,8 @@ setTimeout(()=>{const s=слайдПо(окноОт);if(s&&s._capShow)s._capShow
    в основном там. */
 let swipeT=0, swipeDeadline=0, swipeС=0;
 function swipeMark(){
+  /* Событие от НАШЕЙ ЖЕ досылки жестом не считаем (см. `переложитьНаСлайд`). */
+  if(Date.now()-ДОСЫЛКА<120) return;
   /* Поехали снова — отложенный возврат надписей отменяем: иначе он сработает уже
      посреди нового жеста и даст ту самую вспышку. */
   try{ clearTimeout(ВЕРНУТЬ); }catch(e){}
@@ -24272,7 +24318,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='21:43:25';</script>
+<script>window.__СБОРКА='21:51:56';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
