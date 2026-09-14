@@ -10602,7 +10602,16 @@ function выровнятьПодпись(){
        построению, добирать нечего. Решаем по геометрии, а не по типу
        устройства: там, где слайд всё-таки выше окна (старый iOS без `dvh`,
        миг до пересчёта `dvh`), подгонка ниже нужна по-прежнему. */
-    if(document.documentElement.classList.contains('docscroll')){
+    /* ПРОВЕРЯЕМ ГЕОМЕТРИЮ ВСЕГДА, А НЕ ТОЛЬКО ПРИ ДОКУМЕНТНОЙ ПРОКРУТКЕ
+       (владелец 15.09.2026, 01:40: «почему название уехало???», «поднялось выше
+       чем надо» — подпись стояла посреди экрана).
+
+       Условие про `docscroll` тут лишнее и вредное: важно не КТО крутит ленту, а
+       совпадает ли карточка с окном. Когда стекло выключили, класс `docscroll`
+       на ленте пропал, сброс перестал срабатывать — и подгонка разогналась до
+       своего предела в треть экрана, подняв название на середину. Сам предел
+       тоже уменьшен: 80 точек это уже много, а 265 — это не подгонка, а поломка. */
+    {
       const s=feed&&feed.firstElementChild, h=s?s.offsetHeight:0;
       const окно=(window.visualViewport&&window.visualViewport.height)||innerHeight;
       if(h&&Math.abs(h-окно)<1){ document.documentElement.style.setProperty('--cap-добор','0px'); return; }
@@ -10618,7 +10627,7 @@ function выровнятьПодпись(){
     if(сл){ const r=сл.getBoundingClientRect(); if(r.bottom<=0||r.top>=innerHeight) return; }
     const корень=document.documentElement;
     const было=parseFloat(getComputedStyle(корень).getPropertyValue('--cap-добор'))||0;
-    const надо=Math.min(Math.round(innerHeight/3), Math.max(0, было + (ЗАЗОР_НАДО - з)));
+    const надо=Math.min(80, Math.max(0, было + (ЗАЗОР_НАДО - з)));
     if(Math.abs(надо-было)>=1) корень.style.setProperty('--cap-добор', Math.round(надо)+'px');
   }catch(e){}
 }
@@ -24411,7 +24420,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='22:38:46';</script>
+<script>window.__СБОРКА='22:44:05';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
