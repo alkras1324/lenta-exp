@@ -10132,7 +10132,10 @@ function переложитьНаСлайд(){
 function окноДобор(){
   try{
     const корень=document.documentElement;
-    if(!корень.classList.contains('docscroll')){
+    /* На телефоне слайд = видимое окно (`100dvh`, см. CSS «КАДР РОВНО В ВИДИМЫЙ
+       ЭКРАН»): расхождения нет по построению, добирать нечего. Досчёт здесь
+       только отставал от `dvh` при складывании панелей и уводил подпись. */
+    if(!корень.classList.contains('docscroll')||matchMedia('(hover:none) and (pointer:coarse)').matches){
       корень.style.setProperty('--окно-добор','0px');
       return;
     }
@@ -10157,6 +10160,11 @@ try{
 const ЗАЗОР_НАДО=13;
 function выровнятьПодпись(){
   try{
+    /* На телефоне слайд = окно (`dvh`): зазор сходится по построению, досчёт
+       только отставал от складывания панелей и уводил подпись вверх. */
+    if(document.documentElement.classList.contains('docscroll')&&matchMedia('(hover:none) and (pointer:coarse)').matches){
+      document.documentElement.style.setProperty('--cap-добор','0px'); return;
+    }
     const з=зазорПодписи();
     if(з===null) return;
     /* ПОДПИСЬ УПОЛЗАЛА ВВЕРХ (владелец 14.09.2026: «куда уезжает надпись»).
