@@ -4714,7 +4714,7 @@ const ДОКПРОКРУТКА = (function(){
     return /iPhone|iPad/.test(u) && /Safari/.test(u) && ver>=26
       && !/CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS|GSA|Telegram|Instagram|FBAN|FBAV|WhatsApp/.test(u)
       && !(matchMedia('(display-mode:standalone)').matches||navigator.standalone)
-      && ({956:1,932:1,874:1,852:1,926:1,844:1,896:1,812:1})[(window.__xVH||(window.__xVH=(()=>{try{const d=document.createElement('div');d.style.cssText='position:absolute;top:0;height:100lvh;visibility:hidden;pointer-events:none';(document.body||document.documentElement).appendChild(d);const v=d.offsetHeight; d.remove(); return v||screen.height;}catch(e){ return screen.height; }})()))]===1
+      && ({956:1,932:1,874:1,852:1,926:1,844:1,896:1,812:1})[screen.height]===1
       && (screen.height-innerHeight)<=175;
   }catch(e){ return false; }
 })();
@@ -4752,10 +4752,9 @@ if (ДОКПРОКРУТКА) {
     const ЧАСЫ={956:62,932:59,874:62,852:59,926:47,844:47,896:44,812:44,667:20,736:20};
     if (корень.classList.contains('docscroll')) {
       корень.classList.add('xglass');
-      const Э=(window.__xVH||(window.__xVH=(()=>{try{const d=document.createElement('div');d.style.cssText='position:absolute;top:0;height:100lvh;visibility:hidden;pointer-events:none';(document.body||document.documentElement).appendChild(d);const v=d.offsetHeight; d.remove(); return v||screen.height;}catch(e){ return screen.height; }})()));
-      const T=(ЧАСЫ[Э]!=null?ЧАСЫ[Э]:Math.round((Э-innerHeight)*0.4));
+      const T=(ЧАСЫ[screen.height]!=null?ЧАСЫ[screen.height]:Math.round((screen.height-innerHeight)*0.4));
       корень.style.setProperty('--xT', T+'px');
-      корень.style.setProperty('--xscr', Э+'px');
+      корень.style.setProperty('--xscr', screen.height+'px');
       window.__xT=T;
     }
     /* Страховка и документная прокрутка несовместимы: там высоту столбика задаёт
