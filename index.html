@@ -10339,10 +10339,6 @@ function syncL3Band(){
 function переложитьНаСлайд(){
   try{
     if(!ДОКПРОКРУТКА) return;                    // ящик сам держит позицию
-    /* В стеклянном режиме позицию держит снап с отрицательным `scroll-margin-top`,
-       и досылка скриптом только мешает: она равняет карточку по краю ОКНА, то есть
-       стаскивает её обратно из-под часов — ровно то, ради чего режим и сделан. */
-    if(document.documentElement.classList.contains('xglass')) return;
     if(VIEW==='grid') return;                    // в плитке слайдов нет
     if(ЛЕНТАЕДЕТ) return;                        // под пальцем не трогаем
     /* Довершаем сдвиг ТОЛЬКО когда лента уже почти на границе idx — иначе
@@ -10363,8 +10359,19 @@ function переложитьНаСлайд(){
     if(Math.abs(позицияЛенты()-idx)>0.3) return;
     const с=слайдПо(idx); if(!с) return;
     const r=с.getBoundingClientRect();
-    if(Math.abs(r.top)<2) return;                // уже на месте
-    ПРОКРУТЧИК.scrollTop=ПРОКРУТЧИК.scrollTop+r.top;
+    /* КУДА ЦЕЛИТЬСЯ — ЗАВИСИТ ОТ РЕЖИМА, И ЭТО ГЛАВНОЕ ЗДЕСЬ (владелец 14.09.2026:
+       «заходит под панели, но всё промазывает, потому что вьюпорт меняется»).
+
+       В классическом режиме карточка стоит верхом к кромке окна: цель — ноль.
+       В стеклянном она НАМЕРЕННО поднята под часы отрицательным `scroll-margin-top`,
+       и её правильное место — `−T`, а не ноль. Первая редакция этого не знала и
+       функцию в стеклянном режиме просто выключала; тогда съезд оставался
+       неисправленным: панели складываются уже ПОСЛЕ снапа, документ пересчитывается,
+       и карточка уезжает (замер с телефона: `slide top −118` вместо −62, позиция
+       1.0586 вместо 1). Выключать было нечего — надо было целиться в другую точку. */
+    const цель=document.documentElement.classList.contains('xglass') ? -(window.__xT||0) : 0;
+    if(Math.abs(r.top-цель)<2) return;           // уже на месте
+    ПРОКРУТЧИК.scrollTop=ПРОКРУТЧИК.scrollTop+(r.top-цель);
   }catch(e){}
 }
 function окноДобор(){
@@ -24142,7 +24149,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='19:23:45';</script>
+<script>window.__СБОРКА='19:32:56';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
