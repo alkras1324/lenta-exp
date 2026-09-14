@@ -23750,10 +23750,18 @@ document.addEventListener('keydown',e=>{
 <script>
 (function(){
   const el=document.getElementById('xdiag');
+  /* досылка позиции скриптом стаскивала бы карточку к краю окна — на опыте выключена */
+  try{ переложитьНаСлайд=function(){}; }catch(e){}
   try{
     const st=document.createElement('style');
-    st.textContent='.feed .slide,html.docscroll .slide{height:'+screen.height+'px!important}'+
-      ':root{--окно-добор:calc('+screen.height+'px - 100dvh)!important;--cap-добор:0px!important}'+
+    const H=screen.height+'px', E='('+H+' - 100dvh)';
+    st.textContent=
+      /* карточка = окно + 2 × запас; запас = screen − окно (закрывает зоны часов и нижней строки) */
+      '.feed .slide,html.docscroll .slide{height:calc(100dvh + 2 * '+E+')!important;'+
+      /* снап останавливает по видимой середине: отрицательные поля на запас */
+      'scroll-margin-top:calc(-1 * '+E+')!important;scroll-margin-bottom:calc(-1 * '+E+')!important}'+
+      /* подпись поднимается на запас, чтобы стоять над «Купить» */
+      ':root{--окно-добор:calc'+E+'!important;--cap-добор:0px!important}'+
       '.slide .cap{transition:opacity .25s ease}body.swiping .slide .cap{opacity:0!important}';
     document.head.appendChild(st);
   }catch(e){}
