@@ -30,15 +30,13 @@ RAMA_OLD = 'shot.clientWidth/shot.clientHeight'
 RAMA_NEW = 'shot.clientWidth/((ДОКПРОКРУТКА&&document.documentElement.classList.contains("xglass"))?Math.min(shot.clientHeight,(window.__xH||(window.__xH=(()=>{const d=document.createElement("div");d.style.cssText="position:absolute;top:0;height:100lvh;visibility:hidden";document.body.appendChild(d);const v=d.offsetHeight;d.remove();return v||innerHeight;})()))):shot.clientHeight)'
 assert html.count(RAMA_OLD) >= 2; html = html.replace(RAMA_OLD, RAMA_NEW)
 # прокрутка документом — только в стеклянном режиме (точно полный Safari 26); иначе лента листается внутри окна
-DOC_OLD = "  try{ return !matchMedia('(display-mode:standalone)').matches; }catch(e){ return false; }
-})();"
-DOC_NEW = ("  try{ const u=navigator.userAgent, ver=+((/Version\/(\d+)/.exec(u)||[])[1]||0);"
+DOC_OLD = "  try{ return !matchMedia('(display-mode:standalone)').matches; }catch(e){ return false; }\n})();"
+DOC_NEW = ("  try{ const u=navigator.userAgent, ver=+((/Version\\/(\\d+)/.exec(u)||[])[1]||0);"
            " return /iPhone|iPad/.test(u)&&/Safari/.test(u)&&ver>=26"
            "&&!/CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS|GSA|Telegram|Instagram|FBAN|FBAV|WhatsApp/.test(u)"
            "&&!(matchMedia('(display-mode:standalone)').matches||navigator.standalone)"
            "&&({956:1,932:1,874:1,852:1,926:1,844:1,896:1,812:1})[screen.height]===1"
-           "&&(screen.height-innerHeight)<=175; }catch(e){ return false; }
-})();")
+           "&&(screen.height-innerHeight)<=175; }catch(e){ return false; }\n})();")
 assert html.count(DOC_OLD) == 1, 'doc'; html = html.replace(DOC_OLD, DOC_NEW)
 assert '/*__DATA__*/{}' in html and '<script src="data.js"></script>' in html
 html = html.replace('/*__DATA__*/{}', json.dumps({'bouquets': bq}, ensure_ascii=False))
