@@ -23784,6 +23784,8 @@ document.addEventListener('keydown',e=>{
       'html.docscroll.xglass .slide:not(.hero) .cap{--окно-добор:calc('+H+' - '+T+' - 100dvh)!important}'+
       'html.docscroll .slide:not(.xcur) .cap{opacity:0!important;visibility:hidden!important}}'+
       ':root{--cap-добор:0px!important}'+
+      /* подложка под роликом — постер; размыт как видео-подложка, а не на 2px, иначе читается резкой «заставкой» крупнее ролика */
+      '.photo.boxy:has(video.fg) .bg>img{filter:blur(30px) brightness(.82) saturate(1.2)!important}'+
       '.slide .cap{transition:opacity .25s ease}body.swiping .slide .cap{opacity:0!important}'+
       /* кнопки и таблетка — одно состояние: не гаснут при листании, стекло не пропадает */
       /* контейнер не гасим (иначе стекло кнопок пропадает и впрыгивает третьим шагом) —
