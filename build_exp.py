@@ -171,18 +171,6 @@ html = html.replace(ПОВОРОТ_ЯКОРЬ, """    pwaFix();
     addEventListener('orientationchange', наБоку);
     addEventListener('resize', наБоку);""")
 
-# ═══ ОПЫТ 15.09.2026, 01:55: КАРТОЧКА РОСТОМ `100lvh`, А НЕ `100dvh` ════════
-# Под нижней панелью Safari просвечивал верх СЛЕДУЮЩЕЙ карточки: панель
-# полупрозрачная, документ длиннее окна, и за ней видно продолжение ленты.
-# Значит рисовать туда можно — не хватает высоты у самой карточки.
-# `100dvh` это окно (796), `100lvh` — окно со сложенными панелями (836): те самые
-# 40 точек, которые и просвечивают. Ставим `lvh`, и под панелью оказывается та же
-# карточка. Известная цена: при схлопывании панелей `lvh` не меняется, а окно
-# растёт — проверяем на телефоне, не вернётся ли щель между карточками.
-СЛАЙД_OLD = """    html.docscroll .slide{height:100dvh;}"""
-assert html.count(СЛАЙД_OLD) == 1, 'высота слайда'
-html = html.replace(СЛАЙД_OLD, """    html.docscroll .slide{height:100lvh;}   /* опыт: под панелью — та же карточка */""")
-
 assert '/*__DATA__*/{}' in html and '<script src="data.js"></script>' in html
 html = html.replace('/*__DATA__*/{}', json.dumps({'bouquets': bq}, ensure_ascii=False))
 html = html.replace('<script src="data.js"></script>', '')
