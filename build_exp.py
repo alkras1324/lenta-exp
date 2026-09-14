@@ -29,6 +29,17 @@ assert POS_OLD in html; html = html.replace(POS_OLD, POS_NEW)
 RAMA_OLD = 'shot.clientWidth/shot.clientHeight'
 RAMA_NEW = 'shot.clientWidth/((ДОКПРОКРУТКА&&document.documentElement.classList.contains("xglass"))?Math.min(shot.clientHeight,(window.__xH||(window.__xH=(()=>{const d=document.createElement("div");d.style.cssText="position:absolute;top:0;height:100lvh;visibility:hidden";document.body.appendChild(d);const v=d.offsetHeight;d.remove();return v||innerHeight;})()))):shot.clientHeight)'
 assert html.count(RAMA_OLD) >= 2; html = html.replace(RAMA_OLD, RAMA_NEW)
+# прокрутка документом — только в стеклянном режиме (точно полный Safari 26); иначе лента листается внутри окна
+DOC_OLD = "  try{ return !matchMedia('(display-mode:standalone)').matches; }catch(e){ return false; }
+})();"
+DOC_NEW = ("  try{ const u=navigator.userAgent, ver=+((/Version\/(\d+)/.exec(u)||[])[1]||0);"
+           " return /iPhone|iPad/.test(u)&&/Safari/.test(u)&&ver>=26"
+           "&&!/CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS|GSA|Telegram|Instagram|FBAN|FBAV|WhatsApp/.test(u)"
+           "&&!(matchMedia('(display-mode:standalone)').matches||navigator.standalone)"
+           "&&({956:1,932:1,874:1,852:1,926:1,844:1,896:1,812:1})[screen.height]===1"
+           "&&(screen.height-innerHeight)<=175; }catch(e){ return false; }
+})();")
+assert html.count(DOC_OLD) == 1, 'doc'; html = html.replace(DOC_OLD, DOC_NEW)
 assert '/*__DATA__*/{}' in html and '<script src="data.js"></script>' in html
 html = html.replace('/*__DATA__*/{}', json.dumps({'bouquets': bq}, ensure_ascii=False))
 html = html.replace('<script src="data.js"></script>', '')
@@ -57,7 +68,7 @@ DIAG = r'''
        экран из таблицы (известна высота часов), забрано ≤175 (встроенный Safari забирает 218).
        Иначе — классический: карточка = окно, тёмные шторки за краями окна. */
     const TT0={956:62,932:59,874:62,852:59,926:47,844:47,896:44,812:44}[screen.height];
-    const GL=GLASS&&TT0!=null;
+    const GL=document.documentElement.classList.contains('docscroll');
     if(GL) document.documentElement.classList.add('xglass');
     else ['top','bottom'].forEach(k=>{ const c=document.createElement('div');
       c.style.cssText='position:fixed;left:0;right:0;height:400px;z-index:40;pointer-events:none;background:#0b0a09;'+(k==='top'?'bottom:100%':'top:100%');
