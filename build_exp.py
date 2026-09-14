@@ -22,7 +22,7 @@ for k, i in enumerate((2, 4, 6, 8)):
     bq[i-1]['name'] = f'Букет {i} · видео'
 POS_OLD = 'const позицияЛенты=()=>{ const h=высотаСлайда(); return окноОт+(h?ПРОКРУТЧИК.scrollTop/h:0); };'
 POS_NEW = ('const позицияЛенты=()=>{ const h=высотаСлайда(); if(!h) return окноОт; '
-           'let E=0; try{ if(ДОКПРОКРУТКА&&matchMedia("(hover:none) and (pointer:coarse)").matches) E=Math.max(0,(h-innerHeight)/2); }catch(e){} '
+           'let E=0; try{ if(ДОКПРОКРУТКА&&matchMedia("(hover:none) and (pointer:coarse)").matches) E=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--xT"))||0; }catch(e){} '
            'return окноОт+(ПРОКРУТЧИК.scrollTop-E)/h; };')
 assert POS_OLD in html; html = html.replace(POS_OLD, POS_NEW)
 assert '/*__DATA__*/{}' in html and '<script src="data.js"></script>' in html
@@ -45,13 +45,17 @@ DIAG = r'''
   try{
     const st=document.createElement('style');
     const H=screen.height+'px', E='('+H+' - 100dvh)';
+    /* высота часов (верхняя зона): Safari её не сообщает — по таблице экранов iPhone */
+    const TT={956:62,932:59,874:62,852:59,926:47,844:47,896:44,812:44,667:20,736:20}[screen.height];
+    const T=(TT!=null?TT:Math.round((screen.height-innerHeight)*0.4))+'px';
+    document.documentElement.style.setProperty('--xT',T);
     st.textContent=
       /* карточка = окно + 2 × запас; запас = screen − окно (закрывает зоны часов и нижней строки) */
       /* только телефон с прокруткой документом: на десктопе карточка в рамке, панелей поверх нет */
       '@media (hover:none) and (pointer:coarse){'+
-      'html.docscroll .slide{height:calc(100dvh + 2 * '+E+')!important;'+
+      'html.docscroll .slide{height:'+H+'!important;'+
       /* снап останавливает по видимой середине: отрицательные поля на запас */
-      'scroll-margin-top:calc(-1 * '+E+')!important;scroll-margin-bottom:calc(-1 * '+E+')!important}'+
+      'scroll-snap-align:start!important;scroll-margin-top:calc(-1 * '+T+')!important;scroll-margin-bottom:0!important}'+
       /* подпись поднимается на запас, чтобы стоять над «Купить» */
       'html.docscroll{--окно-добор:calc'+E+'!important}'+
       /* подпись прибита к кнопкам, а не к картинке: стоит на месте, при листании только гаснет */
