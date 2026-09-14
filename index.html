@@ -23727,7 +23727,7 @@ document.addEventListener('keydown',e=>{
 
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
- padding:4px 6px;border-radius:6px;white-space:pre;max-width:70vw;overflow:hidden"></div>
+ padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
 <div id="xprobe" style="position:absolute;left:-9999px;top:0;visibility:hidden">
  <div id="p-vh" style="height:100vh"></div><div id="p-svh" style="height:100svh"></div>
  <div id="p-lvh" style="height:100lvh"></div><div id="p-dvh" style="height:100dvh"></div>
@@ -23805,7 +23805,7 @@ document.addEventListener('keydown',e=>{
           ' cv:'+yn(CSS.supports('content-visibility','auto'))+'\n'+
         'касания    '+(navigator.maxTouchPoints||0)+'  язык '+navigator.language+'\n'+
         'viewport   '+(((document.querySelector('meta[name=viewport]')||{}).content)||'-').replace(/\s+/g,'')+'\n'+
-        'UA '+navigator.userAgent.replace(/Mozilla\/5\.0 /,'').slice(0,110);
+        'UA '+navigator.userAgent.replace(/Mozilla\/5\.0 /,'');
     }catch(e){ el.textContent='diag err '+e; }
   }
   function edges(){
