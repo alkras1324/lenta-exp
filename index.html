@@ -23784,9 +23784,6 @@ document.addEventListener('keydown',e=>{
       'html.docscroll.xglass .slide:not(.hero) .cap{--окно-добор:calc('+H+' - '+T+' - 100dvh)!important}'+
       'html.docscroll .slide:not(.xcur) .cap{opacity:0!important;visibility:hidden!important}}'+
       ':root{--cap-добор:0px!important}'+
-      /* у ролика коробки нет: ролик и фото под ним — во всю карточку, одним размером */
-      '.photo.boxy:has(video.fg) .fg,.photo.boxy:has(video.fg) .still{object-fit:cover!important;transform:none!important}'+
-      '.photo.boxy:has(video.fg) .bg{display:none!important}'+
       '.slide .cap{transition:opacity .25s ease}body.swiping .slide .cap{opacity:0!important}'+
       /* кнопки и таблетка — одно состояние: не гаснут при листании, стекло не пропадает */
       /* контейнер не гасим (иначе стекло кнопок пропадает и впрыгивает третьим шагом) —
