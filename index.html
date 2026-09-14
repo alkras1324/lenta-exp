@@ -4124,13 +4124,17 @@
       scroll-snap-align:start!important;
       scroll-margin-top:calc(-1 * var(--xT))!important;
       scroll-margin-bottom:0!important;}
-    /* Добор до видимого окна здесь известен точно — экран минус окно, — и считать
-       его скриптом (`окноДобор`) не нужно: `!important` перебивает его inline-стиль. */
-    html.docscroll.xglass{--окно-добор:calc(var(--xscr) - 100dvh)!important;}
-    /* Подпись прибита к строке кнопок, а не к картинке: при листании она стоит на
-       месте и только гаснет, а не уезжает вместе с кадром. */
-    html.docscroll.xglass .slide:not(.hero) .cap{
-      --окно-добор:calc(var(--xscr) - var(--xT) - 100dvh)!important;}
+    /* ДОБОР СЧИТАЕТ `окноДобор()`, КАК И В ОБЫЧНОМ РЕЖИМЕ — И ЭТО ОТКАТ
+       (владелец 15.09.2026, 01:10: таблетка наехала на «Купить»).
+
+       Здесь стояла формула «экран минус видимое окно» с `!important`, которая
+       перебивала замер скрипта. Казалось, что в стеклянном режиме добор известен
+       точно. Не известен: высота карточки и высота, от которой отмеряется нижняя
+       обвязка, в этом режиме расходятся, и при сложенных панелях формула уводила
+       строку покупки вниз — под таблетку.
+
+       Замер по `visualViewport` знает это без предположений, и он один на оба
+       режима. Меньше правил — меньше мест, где они расходятся. */
   }
   /* Замер зазора подписи в стеклянном режиме всегда давал ноль добора — не гоняем. */
   html.xglass{--cap-добор:0px!important;}
@@ -24350,7 +24354,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='22:07:30';</script>
+<script>window.__СБОРКА='22:14:38';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
