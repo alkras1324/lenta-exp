@@ -23764,7 +23764,11 @@ document.addEventListener('keydown',e=>{
       ':root{--окно-добор:calc'+E+'!important;--cap-добор:0px!important}'+
       '.slide .cap{transition:opacity .25s ease}body.swiping .slide .cap{opacity:0!important}'+
       /* кнопки и таблетка — одно состояние: не гаснут при листании, стекло не пропадает */
-      '#feedacts,.tabbar{transition:none!important}body.swiping #feedacts,body.swiping .tabbar{opacity:1!important}';
+      /* контейнер не гасим (иначе стекло кнопок пропадает и впрыгивает третьим шагом) —
+         гаснет каждая кнопка сама: два состояния, стекло цело */
+      '#feedacts{transition:none!important}body.swiping #feedacts{opacity:1!important}'+
+      '#feedacts .rail button,#feedacts .acts button,.tabbar{transition:opacity .3s ease!important}'+
+      'body.swiping #feedacts .rail button,body.swiping #feedacts .acts button,body.swiping .tabbar{opacity:.34!important}';
     document.head.appendChild(st);
   }catch(e){}
   function hostIt(){
