@@ -204,23 +204,8 @@ DIAG = r'''
         'pointer-events:none;background:#0b0a09 center/cover no-repeat;'+
         'background-image:var(--xfill-src,none);filter:blur(30px) brightness(.82) saturate(1.2);'+
         'transform:scale(1.15)}'+
-      'html:not(.xpwawin) #xfill{display:none}'+
-      /* ═══ ПОДПИСЬ НЕ УЕЗЖАЕТ С КАРТОЧКОЙ (опыт 15.09.2026, 01:30) ═══════════
-         Владелец: «давай название не будет исчезать», «просто перепозиционироваться,
-         если купить уезжает», «уезжает с пролистыванием!!».
+      'html:not(.xpwawin) #xfill{display:none}';
 
-         Подпись живёт внутри карточки и едет вместе с ней. Перенести её в обвязку —
-         правка вёрстки, которую ночью делать опасно. Здесь проверяем дешёвый
-         эквивалент: подпись ТЕКУЩЕЙ карточки прибивается к окну тем же нижним
-         отступом, что и строка покупки. Тогда она стоит на месте, меняется на
-         соседнюю при остановке и никуда не уезжает.
-
-         Containment с карточки снимаем — иначе `fixed` привяжется к ней самой и
-         ничего не изменится (это мы уже проходили с кадром). */
-      '@media (hover:none) and (pointer:coarse){'+
-      '.feed .slide.xcur{content-visibility:visible!important;contain:none!important}'+
-      '.feed .slide.xcur .cap{position:fixed!important;z-index:7!important}'+
-      '.feed .slide:not(.xcur) .cap{opacity:0!important}}';
     document.head.appendChild(st);
     const fill=document.createElement('div'); fill.id='xfill';
     document.body.insertBefore(fill, document.body.firstChild);
