@@ -10159,9 +10159,16 @@ function выровнятьПодпись(){
   try{
     const з=зазорПодписи();
     if(з===null) return;
+    /* ПОДПИСЬ УПОЛЗАЛА ВВЕРХ (владелец 14.09.2026: «куда уезжает надпись»).
+       Подгонка накопительная: `было + (13 − з)`. Если мерили подпись, которая
+       сейчас не раскладывается (слайд вне экрана), её зазор не отвечал на добор
+       — и добор рос на каждой прокрутке без конца. Поэтому мерим только ту, что
+       на экране, и держим добор в разумном потолке. */
+    const сл=(typeof слайдПо==='function')&&слайдПо(idx);
+    if(сл){ const r=сл.getBoundingClientRect(); if(r.bottom<=0||r.top>=innerHeight) return; }
     const корень=document.documentElement;
     const было=parseFloat(getComputedStyle(корень).getPropertyValue('--cap-добор'))||0;
-    const надо=Math.max(0, было + (ЗАЗОР_НАДО - з));
+    const надо=Math.min(Math.round(innerHeight/3), Math.max(0, было + (ЗАЗОР_НАДО - з)));
     if(Math.abs(надо-было)>=1) корень.style.setProperty('--cap-добор', Math.round(надо)+'px');
   }catch(e){}
 }
@@ -23721,6 +23728,12 @@ document.addEventListener('keydown',e=>{
 <script>
 (function(){
   const el=document.getElementById('xdiag');
+  function hostIt(){
+    const host=document.getElementById('feedchrome');
+    if(host&&el.parentNode!==host){ host.appendChild(el);
+      el.style.position='absolute'; el.style.top='150px'; el.style.left='8px'; }
+  }
+  hostIt(); setInterval(hostIt,1000);
   const h=id=>{const e=document.getElementById(id);return e?Math.round(e.getBoundingClientRect().height):'?';};
   const R=v=>Math.round(v*10)/10;
   function draw(){
