@@ -12883,7 +12883,7 @@ function лвх(){
 function видимаяВысотаКадра(shot){
   try{
     if(ДОКПРОКРУТКА && document.documentElement.classList.contains('xglass')){
-      return Math.min(shot.clientHeight, лвх());
+      return shot.clientHeight;   /* опыт: рама по карточке, 956 */
     }
   }catch(e){}
   return shot.clientHeight;
@@ -24207,7 +24207,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='20:57:02';</script>
+<script>window.__СБОРКА='20:58:32';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
