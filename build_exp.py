@@ -41,6 +41,10 @@ assert html.count(DOC_OLD) == 1, 'doc'; html = html.replace(DOC_OLD, DOC_NEW)
 # на github.io страница живёт в /lenta-exp/: без этого manifest.json ищется в корне сайта (404),
 # и иконка на домашнем экране открывается по старому пути — окно 894, без зоны часов
 assert html.count('<base href="/">') >= 1; html = html.replace('<base href="/">', '<base href="/lenta-exp/">', 1)
+# опыт PWA: строка часов прозрачная — по старым правилам iOS это пускает страницу под часы
+TITLE_META = '<meta name="apple-mobile-web-app-title" content="Цветы">'
+assert html.count(TITLE_META) == 1
+html = html.replace(TITLE_META, TITLE_META + '\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">')
 assert '/*__DATA__*/{}' in html and '<script src="data.js"></script>' in html
 html = html.replace('/*__DATA__*/{}', json.dumps({'bouquets': bq}, ensure_ascii=False))
 html = html.replace('<script src="data.js"></script>', '')
