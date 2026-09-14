@@ -23771,7 +23771,20 @@ document.addEventListener('keydown',e=>{
         'standalone '+matchMedia('(display-mode:standalone)').matches;
     }catch(e){ el.textContent='diag err '+e; }
   }
-  const tick=()=>{draw();requestAnimationFrame(tick);};
+  function edges(){
+    document.querySelectorAll('.feed .slide').forEach((s,k)=>{
+      if(s.querySelector(':scope>.xedge')) return;
+      const d=document.createElement('div'); d.className='xedge';
+      d.style.cssText='position:absolute;left:0;right:0;top:0;bottom:0;z-index:60;pointer-events:none;'+
+        'border-top:8px solid #ff0;border-bottom:8px solid #0ff;box-sizing:border-box';
+      const n=(typeof номерСлайда==='function')?номерСлайда(s)+1:k+1;
+      d.innerHTML='<b style="position:absolute;top:8px;left:50%;transform:translateX(-50%);background:#ff0;color:#000;font:700 13px sans-serif;padding:1px 6px">ВЕРХ КАРТОЧКИ '+n+'</b>'+
+        '<b style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:#0ff;color:#000;font:700 13px sans-serif;padding:1px 6px">НИЗ КАРТОЧКИ '+n+'</b>';
+      if(getComputedStyle(s).position==='static') s.style.position='relative';
+      s.appendChild(d);
+    });
+  }
+  const tick=()=>{draw();edges();requestAnimationFrame(tick);};
   requestAnimationFrame(tick);
 })();
 </script>
