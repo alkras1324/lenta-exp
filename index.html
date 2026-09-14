@@ -24208,7 +24208,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='20:50:45';</script>
+<script>window.__СБОРКА='20:54:52';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
@@ -24260,12 +24260,23 @@ document.addEventListener('keydown',e=>{
          они разом встали фиксированными друг поверх друга: владелец увидел месиво
          из двух карточек сразу. Обёртка `.photos` одна на карточку, и
          горизонтальное листание внутри неё продолжает работать. */
+      /* ПОДНИМАЕМ КАДР НАД КРОМКОЙ ОКНА НА ВСЁ ЗАБРАННОЕ. `position:fixed` считает
+         `top:0` от ВИЗУАЛЬНОГО вьюпорта, то есть уже ниже часов и адресной строки,
+         и сам по себе вверх не уходит. Отрицательный отступ проверяет прямо: рисует
+         Safari за верхней кромкой окна или обрезает. Высота — `100vh` (956). */
       'body:not(.swiping) .feed .slide.xcur .photos{position:fixed!important;left:0!important;'+
-        'right:0!important;top:0!important;bottom:auto!important;width:100%!important;'+
-        'height:100vh!important;z-index:0!important}}';
+        'right:0!important;top:calc(-1 * var(--xup,0px))!important;bottom:auto!important;'+
+        'width:100%!important;height:100vh!important;z-index:0!important}}';
     document.head.appendChild(st);
     const fill=document.createElement('div'); fill.id='xfill';
     document.body.insertBefore(fill, document.body.firstChild);
+    const подъём=()=>{ try{
+      const окно=(window.visualViewport&&window.visualViewport.height)||innerHeight;
+      document.documentElement.style.setProperty('--xup', Math.max(0, Math.round(screen.height-окно))+'px');
+    }catch(e){} };
+    подъём(); addEventListener('resize',подъём);
+    try{ if(window.visualViewport){ window.visualViewport.addEventListener('resize',подъём,{passive:true});
+      window.visualViewport.addEventListener('scroll',подъём,{passive:true}); } }catch(e){}
   }catch(e){}
   function hostIt(){
     const host=document.getElementById('feedchrome');
