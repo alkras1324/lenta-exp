@@ -4813,13 +4813,7 @@ if (ДОКПРОКРУТКА) {
                   :Math.round((screen.height-ОКНОБЕЗПАНЕЛЕЙ())*0.4));
       const подъём=()=>{ try{
         const окно=(window.visualViewport&&window.visualViewport.height)||innerHeight;
-        const низ=(()=>{ try{
-          const d=document.createElement('div');
-          d.style.cssText='position:absolute;top:0;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none';
-          (document.body||document.documentElement).appendChild(d);
-          const v=d.offsetHeight; d.remove(); return v;
-        }catch(e){ return 0; } })();
-        const T=низ>0 ? Math.max(0, Math.round(screen.height-окно-низ-часы)) : 0;
+        const T=часы;   /* опыт: подъём = высота часов, как в сборке 19:32:56 */
         if(window.__xT!==T){ window.__xT=T; корень.style.setProperty('--xT', T+'px'); }
       }catch(e){} };
       подъём();
@@ -4852,6 +4846,22 @@ if (ДОКПРОКРУТКА) {
     }catch(e){} };
     pwaFix();
     addEventListener('resize', pwaFix);
+    /* ПОВОРОТ — В ФОЛБЭК. Ширина и высота меняются местами, таблица экранов и
+       высота часов перестают что-либо значить. Снимаем стеклянный режим целиком:
+       карточка становится равной окну, лента ведёт себя как в любом другом
+       браузере. Обратно при возврате в портрет НЕ включаем — режим выбирается на
+       загрузке, и менять его на ходу значит перевёрстывать ленту под пальцем. */
+    const наБоку=()=>{ try{
+      if(innerWidth>innerHeight){
+        const к=document.documentElement;
+        к.classList.remove('xglass');
+        к.style.removeProperty('--xT'); к.style.removeProperty('--xscr');
+        window.__xT=0;
+      }
+    }catch(e){} };
+    наБоку();
+    addEventListener('orientationchange', наБоку);
+    addEventListener('resize', наБоку);
     /* Первый вызов случается до того, как iOS сообщит окончательные размеры окна:
        на `load` пересчитываем, иначе страховка остаётся включённой по устаревшим
        числам. */
@@ -24213,7 +24223,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='21:06:15';</script>
+<script>window.__СБОРКА='21:20:18';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
