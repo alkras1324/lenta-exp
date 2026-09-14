@@ -25,6 +25,10 @@ POS_NEW = ('const позицияЛенты=()=>{ const h=высотаСлайд�
            'let E=0; try{ if(ДОКПРОКРУТКА&&matchMedia("(hover:none) and (pointer:coarse)").matches) E=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--xT"))||0; }catch(e){} '
            'return окноОт+(ПРОКРУТЧИК.scrollTop-E)/h; };')
 assert POS_OLD in html; html = html.replace(POS_OLD, POS_NEW)
+# рама кадра — по видимому окну, а не по карточке-экрану (правило обрезки то же, меняется только вход)
+RAMA_OLD = 'shot.clientWidth/shot.clientHeight'
+RAMA_NEW = 'shot.clientWidth/((ДОКПРОКРУТКА&&matchMedia("(hover:none) and (pointer:coarse)").matches)?Math.min(shot.clientHeight,innerHeight):shot.clientHeight)'
+assert html.count(RAMA_OLD) >= 2; html = html.replace(RAMA_OLD, RAMA_NEW)
 assert '/*__DATA__*/{}' in html and '<script src="data.js"></script>' in html
 html = html.replace('/*__DATA__*/{}', json.dumps({'bouquets': bq}, ensure_ascii=False))
 html = html.replace('<script src="data.js"></script>', '')
