@@ -4745,7 +4745,10 @@ const ДОКПРОКРУТКА = (function(){
          замера оно не зависит: 836 при экране 956, то есть забрано 120. У
          встроенного Safari внутри приложения складывать нечего, `lvh` равен окну,
          и забрано те же ~218 — режимы по-прежнему разделяются с запасом. */
-      && (screen.height - ОКНОБЕЗПАНЕЛЕЙ()) <= 175;
+      && (screen.height - ОКНОБЕЗПАНЕЛЕЙ()) <= 175
+      /* lvh равен экрану — адресная строка сверху, и на сколько затягивать
+         карточку под неё, мы не знаем: уходим в фолбэк. */
+      && ОКНОБЕЗПАНЕЛЕЙ() < screen.height - 1;
   }catch(e){ return false; }
 })();
 /* Меряем один раз и запоминаем: значение по определению постоянное, а создание
@@ -4862,6 +4865,25 @@ if (ДОКПРОКРУТКА) {
     наБоку();
     addEventListener('orientationchange', наБоку);
     addEventListener('resize', наБоку);
+    /* На старте `lvh` бывает ещё не устоявшимся: замер при загрузке давал 894 там,
+       где живой пробник показывал 956. Поэтому следим и дальше — как только он
+       дорос до экрана (адресная строка сверху), снимаем стеклянный режим. */
+    const сверить=()=>{ try{
+      const d=document.createElement('div');
+      d.style.cssText='position:absolute;top:0;height:100lvh;visibility:hidden;pointer-events:none';
+      (document.body||document.documentElement).appendChild(d);
+      const v=d.offsetHeight; d.remove();
+      if(v && v >= screen.height-1){
+        const к=document.documentElement;
+        к.classList.remove('xglass');
+        к.style.removeProperty('--xT'); к.style.removeProperty('--xscr');
+        window.__xT=0;
+      }
+    }catch(e){} };
+    сверить();
+    addEventListener('load', сверить);
+    try{ if(window.visualViewport){
+      window.visualViewport.addEventListener('resize', сверить, {passive:true}); } }catch(e){}
     /* Первый вызов случается до того, как iOS сообщит окончательные размеры окна:
        на `load` пересчитываем, иначе страховка остаётся включённой по устаревшим
        числам. */
@@ -24223,7 +24245,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='21:30:43';</script>
+<script>window.__СБОРКА='21:39:31';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
