@@ -23762,7 +23762,9 @@ document.addEventListener('keydown',e=>{
       'scroll-margin-top:calc(-1 * '+E+')!important;scroll-margin-bottom:calc(-1 * '+E+')!important}'+
       /* подпись поднимается на запас, чтобы стоять над «Купить» */
       ':root{--окно-добор:calc'+E+'!important;--cap-добор:0px!important}'+
-      '.slide .cap{transition:opacity .25s ease}body.swiping .slide .cap{opacity:0!important}';
+      '.slide .cap{transition:opacity .25s ease}body.swiping .slide .cap{opacity:0!important}'+
+      /* кнопки и таблетка — одно состояние: не гаснут при листании, стекло не пропадает */
+      '#feedacts,.tabbar{transition:none!important}body.swiping #feedacts,body.swiping .tabbar{opacity:1!important}';
     document.head.appendChild(st);
   }catch(e){}
   function hostIt(){
