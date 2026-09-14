@@ -4122,6 +4122,18 @@
   html.xpwawin,html.xpwawin body{height:var(--xwin,100%)!important;}
   html.xpwawin .feed{height:var(--xwin,100%)!important;}
   html.xpwawin .slide{height:var(--xwin,100%)!important;}
+  /* ПОЛОСА, КОТОРУЮ iOS НЕ ОТДАЛА ОКНУ, — ЗАКРАШИВАЕТСЯ КАДРОМ.
+     Когда окно короче экрана (894 из 956), снизу остаётся глухая чёрная полоса в
+     высоту часов: это уже не наше окно, и обычной разметкой туда не дотянуться.
+     Дотягивается `100vh` — он на этих телефонах равен ЭКРАНУ, а не окну. Слой лежит
+     ПОД всем (`z-index:-1`): высоты карточки, снапа и обвязки он не касается, и если
+     приём где-то не сработает, пропадёт только заливка.
+     Проверено на телефоне владельца 14.09.2026 («полоса закрасилась в pwa»). */
+  html.xpwawin #подполье{position:fixed;left:0;right:0;top:0;height:100vh;z-index:-1;
+    pointer-events:none;background:#0b0a09 center/cover no-repeat;
+    background-image:var(--подполье-кадр,none);
+    filter:blur(30px) brightness(.82) saturate(1.2);transform:scale(1.15);}
+  html:not(.xpwawin) #подполье{display:none;}
   /* УЗКОЕ ОКНО ПК: стрелки листания левее рельса «Нравится / Фильтр / Ссылка»,
      а не поверх него (замер 14.09.2026 на 1280×900). */
   @media (hover:hover) and (pointer:fine) and (max-width:819.98px),
@@ -4715,9 +4727,35 @@ const ДОКПРОКРУТКА = (function(){
       && !/CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS|GSA|Telegram|Instagram|FBAN|FBAV|WhatsApp/.test(u)
       && !(matchMedia('(display-mode:standalone)').matches||navigator.standalone)
       && ({956:1,932:1,874:1,852:1,926:1,844:1,896:1,812:1})[screen.height]===1
-      && (screen.height-innerHeight)<=175;
+      /* ЗАБРАННОЕ МЕРИМ ПО `100lvh`, А НЕ ПО `innerHeight` — И ЭТО ПОЧИНКА
+         (владелец 14.09.2026: «и не стеклянный»).
+
+         Решение принимается ОДИН РАЗ при загрузке, когда панели Safari ещё
+         раскрыты: `screen − innerHeight` в этот момент 956 − 742 = 214, порог не
+         проходит, и режим не включается — хотя через секунду, когда панели
+         сложатся, там будет 161. Разница «включилось или нет» зависела от того,
+         в какой момент посчитали.
+
+         `100lvh` — это по определению окно со СЛОЖЕННЫМИ панелями, и от момента
+         замера оно не зависит: 836 при экране 956, то есть забрано 120. У
+         встроенного Safari внутри приложения складывать нечего, `lvh` равен окну,
+         и забрано те же ~218 — режимы по-прежнему разделяются с запасом. */
+      && (screen.height - ОКНОБЕЗПАНЕЛЕЙ()) <= 175;
   }catch(e){ return false; }
 })();
+/* Меряем один раз и запоминаем: значение по определению постоянное, а создание
+   пробного элемента на каждый вопрос — лишняя перерисовка. */
+function ОКНОБЕЗПАНЕЛЕЙ(){
+  if(window.__lvh) return window.__lvh;
+  try{
+    const d=document.createElement('div');
+    d.style.cssText='position:absolute;top:0;height:100lvh;visibility:hidden;pointer-events:none';
+    (document.body||document.documentElement).appendChild(d);
+    const v=d.offsetHeight; d.remove();
+    window.__lvh = v || innerHeight;
+  }catch(e){ window.__lvh = innerHeight; }
+  return window.__lvh;
+}
 if (ДОКПРОКРУТКА) {
   try{ document.documentElement.classList.add('docscroll'); document.body.classList.add('docscroll'); }catch(e){}
 }
@@ -4787,6 +4825,29 @@ if (ДОКПРОКРУТКА) {
     addEventListener('pageshow', pwaFix);
   }catch(e){}
 })();
+/* Слой под полосой, которую iOS не отдала окну (см. `#подполье` в стилях). Создаём
+   его всегда, а не только при `xpwawin`: страховка включается и выключается на ходу
+   (поворот экрана, возврат из фона), и заводить элемент в этот момент значило бы
+   ловить полосу задним числом. Пока класса нет, слой скрыт стилем и ничего не стоит. */
+function подполье(){
+  try{
+    let э=document.getElementById('подполье');
+    if(!э){
+      э=document.createElement('div'); э.id='подполье'; э.setAttribute('aria-hidden','true');
+      document.body.insertBefore(э, document.body.firstChild);
+    }
+    if(!document.documentElement.classList.contains('xpwawin')) return;
+    const с=слайдПо(idx); if(!с) return;
+    /* Берём кадр ТЕКУЩЕЙ карточки: под полосой должно быть продолжение того, что
+       человек видит. У ролика — его постер: сам ролик в фон не растянешь. */
+    const м=с.querySelector('video.fg[poster]')||с.querySelector('img.fg')||с.querySelector('.bg>img');
+    const у=м?(м.getAttribute('poster')||м.currentSrc||м.src):'';
+    if(!у) return;
+    const надо='url("'+у+'")';
+    if(document.documentElement.style.getPropertyValue('--подполье-кадр')!==надо)
+      document.documentElement.style.setProperty('--подполье-кадр', надо);
+  }catch(e){}
+}
 const ПРОКРУТЧИК = ДОКПРОКРУТКА ? (document.scrollingElement || document.documentElement) : feed;
 /* Кому слушать прокрутку: документ шлёт событие на окно, лента — на себя. */
 const ИСТОЧНИКПРОКРУТКИ = ДОКПРОКРУТКА ? window : feed;
@@ -22269,6 +22330,9 @@ function playCurrent(){ ensureWindow(idx); renderFeedActs();
   /* остановились здесь — тяжёлое этой карточки и соседей едет уже сейчас (#1771) */
   try{ detWarm(idx); }catch(e){}
   pauseReset(); playIn(слайдПо(idx)||слайдПо(окноОт)); vIndSync();
+  /* Заливка полосы под окном — здесь, а не по таймеру: `playCurrent` зовётся ровно
+     когда лента остановилась на кадре, то есть когда фон и должен смениться. */
+  try{ подполье(); }catch(e){}
   /* Показ считаем ЗДЕСЬ, а не в наблюдателе видимости: playCurrent зовётся, когда
      лента остановилась на кадре, а пролистанное насквозь показом не является. */
   try{ evFeedView(); }catch(e){} }
