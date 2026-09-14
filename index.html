@@ -10132,10 +10132,7 @@ function переложитьНаСлайд(){
 function окноДобор(){
   try{
     const корень=document.documentElement;
-    /* На телефоне слайд = видимое окно (`100dvh`, см. CSS «КАДР РОВНО В ВИДИМЫЙ
-       ЭКРАН»): расхождения нет по построению, добирать нечего. Досчёт здесь
-       только отставал от `dvh` при складывании панелей и уводил подпись. */
-    if(!корень.classList.contains('docscroll')||matchMedia('(hover:none) and (pointer:coarse)').matches){
+    if(!корень.classList.contains('docscroll')){
       корень.style.setProperty('--окно-добор','0px');
       return;
     }
@@ -10157,13 +10154,30 @@ try{
     window.visualViewport.addEventListener('scroll',()=>{ переложитьНаСлайд(); окноДобор(); выровнятьПодпись(); },{passive:true});
   }
 }catch(e){}
+/* `dvh` Safari пересчитывает ПОСЛЕ того, как визуальный вьюпорт уже сменился:
+   в момент события окна слайд ещё старой высоты, и доборы считаются от него.
+   Досчитать, когда слайд встал в новую высоту, может только наблюдатель за
+   самим слайдом — иначе остаётся хвост добора и подпись уезжает. */
+try{
+  if(window.ResizeObserver&&feed){
+    let наблюдаемый=null;
+    const ro=new ResizeObserver(()=>{ окноДобор(); выровнятьПодпись(); });
+    const следить=()=>{ const s=feed.firstElementChild;
+      if(s&&s!==наблюдаемый){ if(наблюдаемый) ro.unobserve(наблюдаемый); ro.observe(s); наблюдаемый=s; } };
+    следить(); new MutationObserver(следить).observe(feed,{childList:true});
+  }
+}catch(e){}
 const ЗАЗОР_НАДО=13;
 function выровнятьПодпись(){
   try{
-    /* На телефоне слайд = окно (`dvh`): зазор сходится по построению, досчёт
-       только отставал от складывания панелей и уводил подпись вверх. */
-    if(document.documentElement.classList.contains('docscroll')&&matchMedia('(hover:none) and (pointer:coarse)').matches){
-      document.documentElement.style.setProperty('--cap-добор','0px'); return;
+    /* Слайд РАВЕН видимому окну (на телефоне это `dvh`) — зазор сходится по
+       построению, добирать нечего. Решаем по геометрии, а не по типу
+       устройства: там, где слайд всё-таки выше окна (старый iOS без `dvh`,
+       миг до пересчёта `dvh`), подгонка ниже нужна по-прежнему. */
+    if(document.documentElement.classList.contains('docscroll')){
+      const s=feed&&feed.firstElementChild, h=s?s.offsetHeight:0;
+      const окно=(window.visualViewport&&window.visualViewport.height)||innerHeight;
+      if(h&&Math.abs(h-окно)<1){ document.documentElement.style.setProperty('--cap-добор','0px'); return; }
     }
     const з=зазорПодписи();
     if(з===null) return;
@@ -23738,7 +23752,8 @@ document.addEventListener('keydown',e=>{
   const el=document.getElementById('xdiag');
   try{
     const st=document.createElement('style');
-    st.textContent='.feed .slide,html.docscroll .slide{height:'+screen.height+'px!important}';
+    st.textContent='.feed .slide,html.docscroll .slide{height:'+screen.height+'px!important}'+
+      ':root{--окно-добор:0px!important;--cap-добор:0px!important}';
     document.head.appendChild(st);
   }catch(e){}
   function hostIt(){
