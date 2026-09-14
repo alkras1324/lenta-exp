@@ -23768,26 +23768,6 @@ document.addEventListener('keydown',e=>{
     else ['top','bottom'].forEach(k=>{ const c=document.createElement('div');
       c.style.cssText='position:fixed;left:0;right:0;height:400px;z-index:40;pointer-events:none;background:#0b0a09;'+(k==='top'?'bottom:100%':'top:100%');
       document.body.appendChild(c); });
-    const H=screen.height+'px', E='('+H+' - 100dvh)';
-    /* высота часов (верхняя зона): Safari её не сообщает — по таблице экранов iPhone */
-    const TT={956:62,932:59,874:62,852:59,926:47,844:47,896:44,812:44,667:20,736:20}[screen.height];
-    const T=(TT!=null?TT:Math.round((screen.height-innerHeight)*0.4))+'px';
-    document.documentElement.style.setProperty('--xT',T); window.__xT=GL?parseFloat(T):0;
-    st.textContent=
-      /* карточка = окно + 2 × запас; запас = screen − окно (закрывает зоны часов и нижней строки) */
-      /* только телефон с прокруткой документом: на десктопе карточка в рамке, панелей поверх нет */
-      '@media (hover:none) and (pointer:coarse){'+
-      'html.docscroll.xglass .slide{height:'+H+'!important;'+
-      /* снап останавливает по видимой середине: отрицательные поля на запас */
-      'scroll-snap-align:start!important;scroll-margin-top:calc(-1 * '+T+')!important;scroll-margin-bottom:0!important}'+
-      /* подпись поднимается на запас, чтобы стоять над «Купить» */
-      'html.docscroll.xglass{--окно-добор:calc'+E+'!important}'+
-      /* подпись прибита к кнопкам, а не к картинке: стоит на месте, при листании только гаснет */
-      'html.docscroll.xglass .slide:not(.hero) .cap{--окно-добор:calc('+H+' - '+T+' - 100dvh)!important}'+
-      'html.docscroll .slide:not(.xcur) .cap{opacity:0!important;visibility:hidden!important}}'+
-      ':root{--cap-добор:0px!important}'+
-      /* узкое окно ПК: стрелки листания левее рельса, а не на нём */
-      '@media (hover:hover) and (pointer:fine) and (max-width:819.98px),(hover:hover) and (pointer:fine) and (max-height:519.98px){.feednav{right:86px!important}}'+
       /* подложка под роликом — постер; размыт как видео-подложка, а не на 2px, иначе читается резкой «заставкой» крупнее ролика */
       '.photo.boxy:has(video.fg) .bg>img{filter:blur(30px) brightness(.82) saturate(1.2)!important}'+
       '.slide .cap{transition:opacity .25s ease}body.swiping .slide .cap{opacity:0!important}'+
