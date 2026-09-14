@@ -23756,15 +23756,21 @@ document.addEventListener('keydown',e=>{
     const st=document.createElement('style');
     const u=navigator.userAgent, ver=+((/Version\/(\d+)/.exec(u)||[])[1]||0);
     const GLASS=/iPhone|iPad/.test(u)&&/Safari/.test(u)&&ver>=26&&!/CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS|GSA|Telegram|Instagram|FBAN|FBAV|WhatsApp/.test(u)
-      &&!(matchMedia('(display-mode:standalone)').matches||navigator.standalone);
+      &&!(matchMedia('(display-mode:standalone)').matches||navigator.standalone)
+      /* Safari внутри приложения представляется как полный, но верх у него глухой и забирает больше: 218 против 120–160 */
+      &&(screen.height-innerHeight)<=175;
     if(GLASS) document.documentElement.classList.add('xglass');
     const u=navigator.userAgent, ver=+((/Version\/(\d+)/.exec(u)||[])[1]||0);
     const GLASS=/iPhone|iPad/.test(u)&&/Safari/.test(u)&&ver>=26&&!/CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS|GSA|Telegram|Instagram|FBAN|FBAV|WhatsApp/.test(u)
-      &&!(matchMedia('(display-mode:standalone)').matches||navigator.standalone);
+      &&!(matchMedia('(display-mode:standalone)').matches||navigator.standalone)
+      /* Safari внутри приложения представляется как полный, но верх у него глухой и забирает больше: 218 против 120–160 */
+      &&(screen.height-innerHeight)<=175;
     if(GLASS) document.documentElement.classList.add('xglass');
     const u=navigator.userAgent, ver=+((/Version\/(\d+)/.exec(u)||[])[1]||0);
     const GLASS=/iPhone|iPad/.test(u)&&/Safari/.test(u)&&ver>=26&&!/CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS|GSA|Telegram|Instagram|FBAN|FBAV|WhatsApp/.test(u)
-      &&!(matchMedia('(display-mode:standalone)').matches||navigator.standalone);
+      &&!(matchMedia('(display-mode:standalone)').matches||navigator.standalone)
+      /* Safari внутри приложения представляется как полный, но верх у него глухой и забирает больше: 218 против 120–160 */
+      &&(screen.height-innerHeight)<=175;
     if(GLASS) document.documentElement.classList.add('xglass');
     const H=screen.height+'px', E='('+H+' - 100dvh)';
     /* высота часов (верхняя зона): Safari её не сообщает — по таблице экранов iPhone */
@@ -23857,7 +23863,7 @@ document.addEventListener('keydown',e=>{
         'coarse     '+matchMedia('(hover:none) and (pointer:coarse)').matches+'\n'+
         'standalone '+matchMedia('(display-mode:standalone)').matches+'\n'+
         '── браузер ──\n'+
-        'где        '+where()+'\n'+
+        'где        '+where()+(document.documentElement.classList.contains('xglass')?'  [под панели]':'  [в окно]')+'\n'+
         'iOS        '+(((/OS (\d+)_(\d+)(?:_(\d+))?/.exec(navigator.userAgent)||[]).slice(1).filter(Boolean).join('.'))||'-')+'\n'+
         'Safari ver '+(((/Version\/([\d.]+)/.exec(navigator.userAgent))||[])[1]||'-')+'\n'+
         'DPR        '+devicePixelRatio+'  zoom '+R(vv.scale||1)+'\n'+
