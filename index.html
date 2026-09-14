@@ -23736,6 +23736,11 @@ document.addEventListener('keydown',e=>{
 <script>
 (function(){
   const el=document.getElementById('xdiag');
+  try{ if(new URLSearchParams(location.search).get('screen')==='1'){
+    const st=document.createElement('style');
+    st.textContent='.feed .slide,html.docscroll .slide{height:'+screen.height+'px!important}';
+    document.head.appendChild(st);
+  } }catch(e){}
   function hostIt(){
     const host=document.getElementById('feedchrome');
     if(host&&el.parentNode!==host){ host.appendChild(el);
