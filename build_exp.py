@@ -22,7 +22,7 @@ for k, i in enumerate((2, 4, 6, 8)):
     bq[i-1]['name'] = f'Букет {i} · видео'
 POS_OLD = 'const позицияЛенты=()=>{ const h=высотаСлайда(); return окноОт+(h?ПРОКРУТЧИК.scrollTop/h:0); };'
 POS_NEW = ('const позицияЛенты=()=>{ const h=высотаСлайда(); if(!h) return окноОт; '
-           'let E=0; try{ if(ДОКПРОКРУТКА&&document.documentElement.classList.contains("xglass")) E=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--xT"))||0; }catch(e){} '
+           'let E=0; try{ if(ДОКПРОКРУТКА&&document.documentElement.classList.contains("xglass")) E=window.__xT||0; }catch(e){} '
            'return окноОт+(ПРОКРУТЧИК.scrollTop-E)/h; };')
 assert POS_OLD in html; html = html.replace(POS_OLD, POS_NEW)
 # рама кадра — по видимому окну, а не по карточке-экрану (правило обрезки то же, меняется только вход)
@@ -64,7 +64,7 @@ DIAG = r'''
     /* высота часов (верхняя зона): Safari её не сообщает — по таблице экранов iPhone */
     const TT={956:62,932:59,874:62,852:59,926:47,844:47,896:44,812:44,667:20,736:20}[screen.height];
     const T=(TT!=null?TT:Math.round((screen.height-innerHeight)*0.4))+'px';
-    document.documentElement.style.setProperty('--xT',T);
+    document.documentElement.style.setProperty('--xT',T); window.__xT=GLASS?parseFloat(T):0;
     st.textContent=
       /* карточка = окно + 2 × запас; запас = screen − окно (закрывает зоны часов и нижней строки) */
       /* только телефон с прокруткой документом: на десктопе карточка в рамке, панелей поверх нет */
@@ -186,8 +186,8 @@ DIAG = r'''
       document.querySelectorAll('.feed .slide.xcur').forEach(x=>{ if(x!==s) x.classList.remove('xcur'); });
       if(s&&!s.classList.contains('xcur')) s.classList.add('xcur'); }catch(e){}
   }
-  const tick=()=>{draw();edges();cur();requestAnimationFrame(tick);};
-  requestAnimationFrame(tick);
+  /* плашка — 4 раза в секунду, не каждый кадр: не мешать листанию */
+  setInterval(()=>{draw();edges();cur();},250);
 })();
 </script>
 '''
