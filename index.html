@@ -22861,6 +22861,12 @@ setInterval(()=>{
   }catch(e){}
 }, 250);
 function swipeMark(){
+  /* В ПЛИТКЕ ЛИСТАНИЯ КАРТОЧЕК НЕТ (владелец 15.09.2026, 01:45: «в браузере
+     плитка исчезает тулбар»). Плитка прокручивается тем же документом, что и
+     лента, и её события доходили сюда: лента объявляла «едем» и приглушала
+     контролы, а на плитке это выглядело как пропавшая таблетка. Приглушение —
+     про листание карточек, и в плитке ему делать нечего. */
+  if(VIEW==='grid') return;
   /* Событие от НАШЕЙ ЖЕ досылки жестом не считаем (см. `переложитьНаСлайд`). */
   if(Date.now()-ДОСЫЛКА<120) return;
   /* Поехали снова — отложенный возврат надписей отменяем: иначе он сработает уже
@@ -24420,7 +24426,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='22:44:05';</script>
+<script>window.__СБОРКА='22:48:59';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
