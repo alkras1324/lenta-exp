@@ -1,8 +1,30 @@
+# -*- coding: utf-8 -*-
+"""Сборка ОПЫТНОЙ ленты для https://alkras1324.github.io/lenta-exp/
+
+С 14.09.2026 шаблон берётся уже С ПЕРЕНЕСЁННЫМ рецептом (roma4u, PR #3309):
+два режима, `black-translucent`, рама по видимому окну, два состояния кнопок.
+Поэтому прежних подмен `позицияЛенты`/`shot.clientHeight`/`ДОКПРОКРУТКА` здесь
+больше НЕТ — они живут в самом шаблоне, и дублировать их тут значило бы отлаживать
+не то, что поедет в бой.
+
+Опыту остаётся ровно оснастка: карточки-заглушки, плашка диагностики, полосы
+«ВЕРХ/НИЗ КАРТОЧКИ» и один проверяемый опыт за раз (сейчас — заливка полосы,
+которую iOS не отдала окну PWA).
+
+Путь к шаблону: первым аргументом либо переменной окружения ROMA4U_TPL.
+"""
 import json, urllib.parse, sys, os
-TPL = r'D:\Работа\ИИ\roma4u\.claude\worktrees\feed-3267-debug\docs\design\prototypes\feed\index.template.html'
-OUT = r'C:\Users\yanus\AppData\Local\Temp\claude\D------------roma4u\c46718c0-fb1f-440f-be6f-0bb617195067\scratchpad\lenta-exp\index.html'
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+TPL = (sys.argv[1] if len(sys.argv) > 1 else None) or os.environ.get('ROMA4U_TPL') or os.path.join(
+    HERE, '..', 'roma4u', 'docs', 'design', 'prototypes', 'feed', 'index.template.html')
+OUT = os.path.join(HERE, 'index.html')
+
 html = open(TPL, encoding='utf-8').read()
-colors = ['#c0392b','#8e44ad','#2980b9','#16a085','#d35400','#27ae60','#7f8c8d','#e84393','#f39c12','#34495e']
+
+colors = ['#c0392b', '#8e44ad', '#2980b9', '#16a085', '#d35400', '#27ae60', '#7f8c8d', '#e84393', '#f39c12', '#34495e']
+
+
 def svg(i, c):
     s = (f'<svg xmlns="http://www.w3.org/2000/svg" width="440" height="956" viewBox="0 0 440 956">'
          f'<rect width="440" height="956" fill="{c}"/>'
@@ -12,42 +34,63 @@ def svg(i, c):
          f'<text x="220" y="30" font-size="22" text-anchor="middle" fill="#000" font-family="sans-serif">ВЕРХ КАДРА {i}</text>'
          f'<text x="220" y="945" font-size="22" text-anchor="middle" fill="#000" font-family="sans-serif">НИЗ КАДРА {i}</text></svg>')
     return 'data:image/svg+xml;charset=utf-8,' + urllib.parse.quote(s)
+
+
 bq = [{'name': f'Букет {i}', 'desc': f'Экспериментальная карточка {i}', 'tags': ['тест'],
-       'photos': [{'src': svg(i, colors[i-1]), 'type': 'photo'}],
+       'photos': [{'src': svg(i, colors[i - 1]), 'type': 'photo'}],
        'sizes': [{'n': 25, 'cm': 60, 'price': 5900}]} for i in range(1, 11)]
 # чётные карточки — с роликом (живые ролики с media.neromashka.ru, CORS *)
-VIDS = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vids.json'), encoding='utf-8'))
+VIDS = json.load(open(os.path.join(HERE, 'vids.json'), encoding='utf-8'))
 for k, i in enumerate((2, 4, 6, 8)):
-    bq[i-1]['photos'] = [VIDS[k]] + bq[i-1]['photos']
-    bq[i-1]['name'] = f'Букет {i} · видео'
-POS_OLD = 'const позицияЛенты=()=>{ const h=высотаСлайда(); return окноОт+(h?ПРОКРУТЧИК.scrollTop/h:0); };'
-POS_NEW = ('const позицияЛенты=()=>{ const h=высотаСлайда(); if(!h) return окноОт; '
-           'let E=0; try{ if(ДОКПРОКРУТКА&&document.documentElement.classList.contains("xglass")) E=window.__xT||0; }catch(e){} '
-           'return окноОт+(ПРОКРУТЧИК.scrollTop-E)/h; };')
-assert POS_OLD in html; html = html.replace(POS_OLD, POS_NEW)
-# рама кадра — по видимому окну, а не по карточке-экрану (правило обрезки то же, меняется только вход)
-RAMA_OLD = 'shot.clientWidth/shot.clientHeight'
-RAMA_NEW = 'shot.clientWidth/((ДОКПРОКРУТКА&&document.documentElement.classList.contains("xglass"))?Math.min(shot.clientHeight,(window.__xH||(window.__xH=(()=>{const d=document.createElement("div");d.style.cssText="position:absolute;top:0;height:100lvh;visibility:hidden";document.body.appendChild(d);const v=d.offsetHeight;d.remove();return v||innerHeight;})()))):shot.clientHeight)'
-assert html.count(RAMA_OLD) >= 2; html = html.replace(RAMA_OLD, RAMA_NEW)
-# прокрутка документом — только в стеклянном режиме (точно полный Safari 26); иначе лента листается внутри окна
-DOC_OLD = "  try{ return !matchMedia('(display-mode:standalone)').matches; }catch(e){ return false; }\n})();"
-DOC_NEW = ("  try{ const u=navigator.userAgent, ver=+((/Version\\/(\\d+)/.exec(u)||[])[1]||0);"
-           " return /iPhone|iPad/.test(u)&&/Safari/.test(u)&&ver>=26"
-           "&&!/CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS|GSA|Telegram|Instagram|FBAN|FBAV|WhatsApp/.test(u)"
-           "&&!(matchMedia('(display-mode:standalone)').matches||navigator.standalone)"
-           "&&({956:1,932:1,874:1,852:1,926:1,844:1,896:1,812:1})[screen.height]===1"
-           "&&(screen.height-innerHeight)<=175; }catch(e){ return false; }\n})();")
-assert html.count(DOC_OLD) == 1, 'doc'; html = html.replace(DOC_OLD, DOC_NEW)
-# на github.io страница живёт в /lenta-exp/: без этого manifest.json ищется в корне сайта (404),
-# и иконка на домашнем экране открывается по старому пути — окно 894, без зоны часов
-assert html.count('<base href="/">') >= 1; html = html.replace('<base href="/">', '<base href="/lenta-exp/">', 1)
-# опыт PWA: строка часов прозрачная — по старым правилам iOS это пускает страницу под часы
-TITLE_META = '<meta name="apple-mobile-web-app-title" content="Цветы">'
-assert html.count(TITLE_META) == 1
-html = html.replace(TITLE_META, TITLE_META + '\n<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">')
+    bq[i - 1]['photos'] = [VIDS[k]] + bq[i - 1]['photos']
+    bq[i - 1]['name'] = f'Букет {i} · видео'
+
+# на github.io страница живёт в /lenta-exp/: без этого manifest.json ищется в корне
+# сайта (404), и иконка на домашнем экране открывается по старому пути
+assert html.count('<base href="/">') >= 1
+html = html.replace('<base href="/">', '<base href="/lenta-exp/">', 1)
+
+# `black-translucent` теперь в самом шаблоне — проверяем, что он там, и не дублируем
+assert 'apple-mobile-web-app-status-bar-style' in html, 'в шаблоне нет строки состояния'
+
+# ═══ ОПЫТ 14.09.2026: `screen` ВРЁТ, МЕРИМ ЭКРАН САМИ ════════════════════════
+# Замеры с трёх телефонов: во вкладке Safari 26.6 `screen` отдаёт 414x896 там, где
+# экран на самом деле 440x956 (в PWA на ТОМ ЖЕ телефоне — честные 440x956). А наша
+# таблица высот часов индексируется по `screen.height`: 896 в ней есть, и часы
+# берутся 44 вместо 62 — карточка уезжает под часы на 18 точек меньше, чем надо.
+#
+# Честное число — измеренный `100lvh`: 956 / 956 / 812 на всех трёх замерах, и во
+# вкладке, и с иконки. Переводим на него И таблицу часов, И условие включения
+# стеклянного режима. Порог «забрано <= 175» остаётся по `screen`: он отличает
+# полный Safari от встроенного, и в этой роли проверен владельцем на трёх браузерах.
+ЭКРАН = ("(window.__xVH||(window.__xVH=(()=>{try{"
+         "const d=document.createElement('div');"
+         "d.style.cssText='position:absolute;top:0;height:100lvh;visibility:hidden;pointer-events:none';"
+         "(document.body||document.documentElement).appendChild(d);"
+         "const v=d.offsetHeight; d.remove(); return v||screen.height;"
+         "}catch(e){ return screen.height; }})()))")
+
+УСЛ_OLD = "      && ({956:1,932:1,874:1,852:1,926:1,844:1,896:1,812:1})[screen.height]===1"
+УСЛ_NEW = "      && ({956:1,932:1,874:1,852:1,926:1,844:1,896:1,812:1})[" + ЭКРАН + "]===1"
+assert html.count(УСЛ_OLD) == 1, 'условие режима'
+html = html.replace(УСЛ_OLD, УСЛ_NEW)
+
+ЧАСЫ_OLD = ("      const T=(ЧАСЫ[screen.height]!=null?ЧАСЫ[screen.height]:"
+            "Math.round((screen.height-innerHeight)*0.4));")
+ЧАСЫ_NEW = ("      const Э=" + ЭКРАН + ";\n"
+            "      const T=(ЧАСЫ[Э]!=null?ЧАСЫ[Э]:Math.round((Э-innerHeight)*0.4));")
+assert html.count(ЧАСЫ_OLD) == 1, 'высота часов'
+html = html.replace(ЧАСЫ_OLD, ЧАСЫ_NEW)
+
+СКР_OLD = "      корень.style.setProperty('--xscr', screen.height+'px');"
+СКР_NEW = "      корень.style.setProperty('--xscr', Э+'px');"
+assert html.count(СКР_OLD) == 1, 'высота карточки'
+html = html.replace(СКР_OLD, СКР_NEW)
+
 assert '/*__DATA__*/{}' in html and '<script src="data.js"></script>' in html
 html = html.replace('/*__DATA__*/{}', json.dumps({'bouquets': bq}, ensure_ascii=False))
 html = html.replace('<script src="data.js"></script>', '')
+
 DIAG = r'''
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
@@ -60,61 +103,27 @@ DIAG = r'''
 <script>
 (function(){
   const el=document.getElementById('xdiag');
-  /* досылка позиции скриптом стаскивала бы карточку к краю окна — на опыте выключена */
-  try{ переложитьНаСлайд=function(){}; }catch(e){}
   try{
     const st=document.createElement('style');
-    const u=navigator.userAgent, ver=+((/Version\/(\d+)/.exec(u)||[])[1]||0);
-    const GLASS=/iPhone|iPad/.test(u)&&/Safari/.test(u)&&ver>=26&&!/CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS|GSA|Telegram|Instagram|FBAN|FBAV|WhatsApp/.test(u)
-      &&!(matchMedia('(display-mode:standalone)').matches||navigator.standalone)
-      /* Safari внутри приложения представляется как полный, но верх у него глухой и забирает больше: 218 против 120–160 */
-      &&(screen.height-innerHeight)<=175;
-    /* ДВА РЕЖИМА. Стеклянный — только при полной уверенности: вкладка полного Safari 26+,
-       экран из таблицы (известна высота часов), забрано ≤175 (встроенный Safari забирает 218).
-       Иначе — классический: карточка = окно, тёмные шторки за краями окна. */
-    /* PWA: если iOS дал окно меньше экрана (894 из 956 — полоса часов глухая), карточка = окно, иначе низ с кнопками уезжает за экран */
-    const pwaFix=()=>{ try{ const d=document.documentElement;
-      const sa=matchMedia('(display-mode:standalone)').matches||navigator.standalone;
-      const short=sa&&innerHeight<screen.height-1;
-      d.classList.toggle('xpwawin',short); if(short) d.style.setProperty('--xwin',innerHeight+'px'); }catch(e){} };
-    pwaFix(); addEventListener('resize',pwaFix);
-    const TT0={956:62,932:59,874:62,852:59,926:47,844:47,896:44,812:44}[screen.height];
-    const GL=document.documentElement.classList.contains('docscroll');
-    if(GL) document.documentElement.classList.add('xglass');
-    else ['top','bottom'].forEach(k=>{ const c=document.createElement('div');
-      c.style.cssText='position:fixed;left:0;right:0;height:400px;z-index:40;pointer-events:none;background:#0b0a09;'+(k==='top'?'bottom:100%':'top:100%');
-      document.body.appendChild(c); });
-    const H=screen.height+'px', E='('+H+' - 100dvh)';
-    /* высота часов (верхняя зона): Safari её не сообщает — по таблице экранов iPhone */
-    const TT={956:62,932:59,874:62,852:59,926:47,844:47,896:44,812:44,667:20,736:20}[screen.height];
-    const T=(TT!=null?TT:Math.round((screen.height-innerHeight)*0.4))+'px';
-    document.documentElement.style.setProperty('--xT',T); window.__xT=GL?parseFloat(T):0;
     st.textContent=
-      /* карточка = окно + 2 × запас; запас = screen − окно (закрывает зоны часов и нижней строки) */
-      /* только телефон с прокруткой документом: на десктопе карточка в рамке, панелей поверх нет */
-      '@media (hover:none) and (pointer:coarse){'+
-      'html.docscroll.xglass .slide{height:'+H+'!important;'+
-      /* снап останавливает по видимой середине: отрицательные поля на запас */
-      'scroll-snap-align:start!important;scroll-margin-top:calc(-1 * '+T+')!important;scroll-margin-bottom:0!important}'+
-      /* подпись поднимается на запас, чтобы стоять над «Купить» */
-      'html.docscroll.xglass{--окно-добор:calc'+E+'!important}'+
-      /* подпись прибита к кнопкам, а не к картинке: стоит на месте, при листании только гаснет */
-      'html.docscroll.xglass .slide:not(.hero) .cap{--окно-добор:calc('+H+' - '+T+' - 100dvh)!important}'+
-      'html.docscroll .slide:not(.xcur) .cap{opacity:0!important;visibility:hidden!important}}'+
-      'html.xglass{--cap-добор:0px!important}'+
-      'html.xpwawin,html.xpwawin body{height:var(--xwin)!important}html.xpwawin .feed{height:var(--xwin)!important}html.xpwawin .slide{height:var(--xwin)!important}'+
-      /* узкое окно ПК: стрелки листания левее рельса, а не на нём */
-      '@media (hover:hover) and (pointer:fine) and (max-width:819.98px),(hover:hover) and (pointer:fine) and (max-height:519.98px){.feednav{right:86px!important}}'+
-      /* подложка под роликом — постер; размыт как видео-подложка, а не на 2px, иначе читается резкой «заставкой» крупнее ролика */
-      '.photo.boxy:has(video.fg) .bg>img{filter:blur(30px) brightness(.82) saturate(1.2)!important}'+
-      '.slide .cap{transition:opacity .25s ease}body.swiping .slide .cap{opacity:0!important}'+
-      /* кнопки и таблетка — одно состояние: не гаснут при листании, стекло не пропадает */
-      /* контейнер не гасим (иначе стекло кнопок пропадает и впрыгивает третьим шагом) —
-         гаснет каждая кнопка сама: два состояния, стекло цело */
-      '#feedacts{transition:none!important}body.swiping #feedacts{opacity:1!important}'+
-      '#feedacts .rail button,#feedacts .acts button,.tabbar,#feedacts .rail button *,#feedacts .acts button *,.tabbar *{transition:none!important}'+
-      'body.swiping #feedacts .rail button,body.swiping #feedacts .acts button,body.swiping .tabbar{opacity:.34!important}';
+      /* ═══ ОПЫТ 14.09.2026: ЗАЛИТЬ ПОЛОСУ, КОТОРУЮ iOS НЕ ОТДАЛА ОКНУ ═══════
+         На трёх телефонах из четырёх iOS даёт иконке окно ровно на высоту часов
+         меньше экрана (956→894, 812→768), и снизу остаётся глухая чёрная полоса.
+         Ключ к ней — `100vh`: он на этих же телефонах равен ЭКРАНУ (956), а не
+         окну (894). Значит слой `100vh`, прибитый к верху окна, физически
+         накрывает полосу — проверяем именно это.
+
+         Геометрия ленты НЕ трогается: слой лежит ПОД всем (`z-index:-1`), высоту
+         карточки, снап и обвязку не меняет. Не сработает — пропадёт только
+         заливка, лента останется прежней. */
+      'html.xpwawin #xfill{position:fixed;left:0;right:0;top:0;height:100vh;z-index:-1;'+
+        'pointer-events:none;background:#0b0a09 center/cover no-repeat;'+
+        'background-image:var(--xfill-src,none);filter:blur(30px) brightness(.82) saturate(1.2);'+
+        'transform:scale(1.15)}'+
+      'html:not(.xpwawin) #xfill{display:none}';
     document.head.appendChild(st);
+    const fill=document.createElement('div'); fill.id='xfill';
+    document.body.insertBefore(fill, document.body.firstChild);
   }catch(e){}
   function hostIt(){
     const host=document.getElementById('feedchrome');
@@ -127,7 +136,12 @@ DIAG = r'''
   const yn=b=>b?'да':'НЕТ';
   function where(){
     const u=navigator.userAgent;
-    if(matchMedia('(display-mode:standalone)').matches||navigator.standalone) return 'иконка (PWA)';
+    /* `navigator.standalone` у ВСТРОЕННОГО Safari внутри приложения тоже true —
+       называть это «иконкой» значило бы врать в единственном месте, ради которого
+       плашка и заведена. Иконку от встроенного отличаем по обвязке вокруг
+       страницы: у иконки браузер забирает разве что часы, у встроенного — 218. */
+    const сам=matchMedia('(display-mode:standalone)').matches||navigator.standalone;
+    if(сам) return (screen.height-innerHeight)<=80 ? 'иконка (PWA)' : 'Safari внутри приложения';
     if(/WhatsApp/i.test(u)) return 'WhatsApp';
     if(/Telegram/i.test(u)) return 'Telegram';
     if(/Instagram/i.test(u)) return 'Instagram';
@@ -173,10 +187,11 @@ DIAG = r'''
         'slide h    '+sh+'\n'+
         'slide bot  '+sb+'\n'+
         'docscroll  '+d.classList.contains('docscroll')+'\n'+
+        'заливка    '+d.classList.contains('xpwawin')+'\n'+
         'coarse     '+matchMedia('(hover:none) and (pointer:coarse)').matches+'\n'+
         'standalone '+matchMedia('(display-mode:standalone)').matches+'\n'+
         '── браузер ──\n'+
-        'где        '+where()+(document.documentElement.classList.contains('xglass')?'  [под панели]':'  [в окно]')+'\n'+
+        'где        '+where()+(d.classList.contains('xglass')?'  [под панели]':'  [в окно]')+'\n'+
         'iOS        '+(((/OS (\d+)_(\d+)(?:_(\d+))?/.exec(navigator.userAgent)||[]).slice(1).filter(Boolean).join('.'))||'-')+'\n'+
         'Safari ver '+(((/Version\/([\d.]+)/.exec(navigator.userAgent))||[])[1]||'-')+'\n'+
         'DPR        '+devicePixelRatio+'  zoom '+R(vv.scale||1)+'\n'+
@@ -210,13 +225,28 @@ DIAG = r'''
       s.appendChild(d);
     });
   }
+  /* Заливка берёт кадр ТЕКУЩЕЙ карточки: под полосой должно быть продолжение
+     того, что человек видит, а не случайная картинка. */
+  function fillSrc(){
+    try{
+      const d=document.documentElement;
+      if(!d.classList.contains('xpwawin')) return;
+      const s=слайдПо(idx); if(!s) return;
+      const m=s.querySelector('video.fg[poster]')||s.querySelector('img.fg')||s.querySelector('.bg>img');
+      const u=m?(m.getAttribute('poster')||m.currentSrc||m.src):'';
+      if(!u) return;
+      const было=d.style.getPropertyValue('--xfill-src');
+      const надо='url("'+u+'")';
+      if(было!==надо) d.style.setProperty('--xfill-src',надо);
+    }catch(e){}
+  }
   function cur(){
     try{ const s=слайдПо(idx);
       document.querySelectorAll('.feed .slide.xcur').forEach(x=>{ if(x!==s) x.classList.remove('xcur'); });
       if(s&&!s.classList.contains('xcur')) s.classList.add('xcur'); }catch(e){}
   }
   /* плашка — 4 раза в секунду, не каждый кадр: не мешать листанию */
-  setInterval(()=>{draw();edges();cur();},250);
+  setInterval(()=>{draw();edges();cur();fillSrc();},250);
 })();
 </script>
 '''

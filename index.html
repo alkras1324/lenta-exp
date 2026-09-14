@@ -13,10 +13,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#241d19">
 <meta name="mobile-web-app-capable" content="yes">
-<!-- APPLE-ТЕГОВ ЗДЕСЬ НЕТ НАМЕРЕННО — ОКНО ДАЁТ МАНИФЕСТ. Четыре захода 12.09.2026
-     крутили `black-translucent` против `black`, и оба упирались в одно: окно 894 при
-     экране 956. Но обе настройки — это ОДИН И ТОТ ЖЕ код 2013 года
-     (`apple-mobile-web-app-capable`), и 894 — свойство именно его.
+<!-- СТРОКА СОСТОЯНИЯ — ПРОЗРАЧНАЯ, И ЭТО ЗАМЕР, А НЕ ДОГАДКА (опыт `lenta-exp`,
+     iOS 26.6.1, владелец 14.09.2026 после переустановки иконки: окно 956 при экране 956).
+     Четыре захода 12.09.2026 крутили `black-translucent` против `black` БЕЗ манифеста и
+     упирались в 894 при экране 956 — отсюда вывод «apple-теги возвращают 894». Вывод
+     оказался неполным: 894 даёт СТАРЫЙ путь целиком (`apple-mobile-web-app-capable` без
+     манифеста). С манифестом окно считает современный код WebKit 26, а `black-translucent`
+     лишь снимает глухую полосу часов — вместе они дают полный экран.
+     Порядок такой: манифест обязателен, `apple-mobile-web-app-capable` НЕ возвращать.
      В iOS 26 путь другой: «every site can be a web app… there are now zero
      requirements for installability» (WebKit, релиз Safari 26.0). Сайт без старых
      apple-тегов открывается с домашнего экрана по МАНИФЕСТУ — и окно ему считает
@@ -25,8 +29,8 @@
      `498`), но такой путь объясняет разницу, а старый её не объясняет.
      `mobile-web-app-capable` — стандартное имя, его WebKit 26 понимает; иконки, имя и
      цвета берутся из `manifest.json`.
-     ЕСЛИ ВЕРНЁТЕ apple-теги — вернутся и 894 точки. Проверять на телефоне по чипу
-     `тело/окно/экран`: тело 956 значит путь современный. -->
+     ЕСЛИ ВЕРНЁТЕ `apple-mobile-web-app-capable` — вернутся и 894 точки. Проверять на
+     телефоне по чипу `тело/окно/экран`: тело 956 значит путь современный. -->
 <meta name="apple-mobile-web-app-title" content="Цветы">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
@@ -587,6 +591,10 @@
      подложкой». `.82` возвращает подложку, не поднимая до единицы: граница кадра
      должна остаться видна, иначе букет сольётся со своим же размытием. */
   .photo.boxy .bg>img{filter:blur(2px) brightness(.82) saturate(1.2);}
+  /* Под РОЛИКОМ подложка — его же постер, и 2px размытия его не прячут: он читается
+     резкой «заставкой» крупнее самого ролика (опыт `lenta-exp`, 14.09.2026). Размываем
+     так же, как подложку видео, — чтобы за коробкой был фон, а не вторая картинка. */
+  .photo.boxy:has(video.fg) .bg>img{filter:blur(30px) brightness(.82) saturate(1.2);}
   .photo.boxy .bg>video{filter:blur(30px) brightness(.82) saturate(1.2);}
   /* `translateZ(0)` УБРАН (#1321): промоция выносила кадр на свой композиторный
      слой, и на iPhone X даже «спрятанный» через `visibility:hidden` слой всё
@@ -1875,6 +1883,11 @@
     backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
   .fpill::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);flex:0 0 auto;}
   .fpill b{font-weight:400;opacity:.7;font-size:15px;line-height:1;}
+  /* ПЛАШКА ПОРЯДКА — БЕЗ ТОЧКИ УСЛОВИЯ. Точка `::before` в этом ряду значит
+     «выдача сужена на одно условие»; порядок не сужает ничего, и одинаковый
+     вид обещал бы человеку то, чего нет. Вместо точки — значок сортировки. */
+  .fsortpill::before{width:auto;height:auto;border-radius:0;background:none;
+    content:'\2195';font-size:12px;line-height:1;opacity:.75;}
   .fpill:active{background:rgba(20,18,16,.78);}
   /* Обводка фокуса в фильтре: выбор передавался только цветом, и с клавиатуры было
      не видно, где ты находишься (СВ-61). Белая — панель тёмная, и зелёный --go на
@@ -2128,9 +2141,23 @@
      лента пересоздаёт на каждой смене кадра, и новая строка рождалась сразу
      приглушённой, без перехода, — гасла и возвращалась не в такт с таблеткой
      (владелец 14.09.2026). Переход у контейнера и у таблетки один: .45s ease. */
-  #feedacts{transition:opacity .45s ease;}
-  body.swiping #feedacts{opacity:.34;}
-  /* Таблетка внизу — те же входы, что были в шапке: на листании гаснет так же. */
+  /* НО ГАСИМ НЕ КОНТЕЙНЕР, А КАЖДУЮ КНОПКУ — И ЭТО ПОЧИНКА ТРЁХ СОСТОЯНИЙ
+     (опыт `lenta-exp`, подтверждено снимками кнопки по времени 14.09.2026).
+
+     Пока у ПРЕДКА `opacity<1`, он сам становится корнем для `backdrop-filter`, и
+     стекло кнопок не рисуется вовсе. Отсюда и брались три состояния вместо двух:
+     прозрачные при листании → полупрозрачные, пока opacity растёт → стекло
+     «впрыгивает» серее в самом конце перехода.
+
+     Лечится двумя движениями: контейнер не гасим никогда, а гасит себя каждая
+     кнопка — у неё свой `backdrop-filter`, и корнем она не становится. Перехода
+     нет: два состояния значит два, без промежуточных кадров. */
+  #feedacts{transition:none;}
+  body.swiping #feedacts{opacity:1;}
+  #feedacts .rail button,#feedacts .acts button,.tabbar,
+  #feedacts .rail button *,#feedacts .acts button *,.tabbar *{transition:none;}
+  body.swiping #feedacts .rail button,
+  body.swiping #feedacts .acts button,
   body.swiping .tabbar{opacity:.34;}
   @media (prefers-reduced-motion:reduce){
     body.swiping .tabbar{opacity:1;}
@@ -4057,6 +4084,50 @@
     .freset:hover,.summary .back:hover{color:#fff;}
     .cap .descwrap:hover{opacity:1;}
   }
+  /* ═══ ДВА РЕЖИМА ЛЕНТЫ — РАЗМЕТКА ══════════════════════════════════════════
+     Классический режим отдельных правил не требует: карточка равна окну, как и была.
+     Ниже — только стеклянный (`html.xglass`, признаки собраны в `ДОКПРОКРУТКА`)
+     и страховка иконки (`html.xpwawin`). */
+  @media (hover:none) and (pointer:coarse){
+    /* Карточка ростом в ЭКРАН, а снап останавливает её по ВИДИМОЙ середине:
+       отрицательное поле сверху ровно в высоту часов. */
+    html.docscroll.xglass .slide{
+      height:var(--xscr)!important;
+      scroll-snap-align:start!important;
+      scroll-margin-top:calc(-1 * var(--xT))!important;
+      scroll-margin-bottom:0!important;}
+    /* Добор до видимого окна здесь известен точно — экран минус окно, — и считать
+       его скриптом (`окноДобор`) не нужно: `!important` перебивает его inline-стиль. */
+    html.docscroll.xglass{--окно-добор:calc(var(--xscr) - 100dvh)!important;}
+    /* Подпись прибита к строке кнопок, а не к картинке: при листании она стоит на
+       месте и только гаснет, а не уезжает вместе с кадром. */
+    html.docscroll.xglass .slide:not(.hero) .cap{
+      --окно-добор:calc(var(--xscr) - var(--xT) - 100dvh)!important;}
+  }
+  /* Замер зазора подписи в стеклянном режиме всегда давал ноль добора — не гоняем. */
+  html.xglass{--cap-добор:0px!important;}
+  /* Подпись гаснет на листании вместе с кнопками: те же два состояния. */
+  .slide .cap{transition:opacity .25s ease;}
+  body.swiping .slide .cap{opacity:0;}
+  @media (prefers-reduced-motion:reduce){ body.swiping .slide .cap{opacity:1;} }
+  /* Страховка иконки: окно меньше экрана — карточка равна окну.
+
+     ЗАПАСНОЕ ЗНАЧЕНИЕ `100%` ОБЯЗАТЕЛЬНО, И ЭТО НЕ ПЕДАНТИЗМ. Без него
+     `height:var(--xwin)` при незаданной переменной — не «пропустить правило», а
+     `height:auto` с `!important` поверх честных `100%`: лента схлопывается в
+     высоту содержимого, слайд получает нулевую высоту. Ровно это и поймал прогон
+     `browser_window_check` (тело 280 при окне 796, слайд 0), когда класс успел
+     встать раньше переменной. С `100%` худшее, что бывает, — правило ничего не
+     меняет. */
+  html.xpwawin,html.xpwawin body{height:var(--xwin,100%)!important;}
+  html.xpwawin .feed{height:var(--xwin,100%)!important;}
+  html.xpwawin .slide{height:var(--xwin,100%)!important;}
+  /* УЗКОЕ ОКНО ПК: стрелки листания левее рельса «Нравится / Фильтр / Ссылка»,
+     а не поверх него (замер 14.09.2026 на 1280×900). */
+  @media (hover:hover) and (pointer:fine) and (max-width:819.98px),
+         (hover:hover) and (pointer:fine) and (max-height:519.98px){
+    .feednav{right:86px;}
+  }
 </style>
 </head>
 <body>
@@ -4617,12 +4688,97 @@ const ДОКПРОКРУТКА = (function(){
      (`WIDE`, 900 точек): одно число, один смысл. Читаем его здесь напрямую —
      сама переменная объявляется ниже по файлу. */
   try{ if (matchMedia('(min-width:900px)').matches) return false; }catch(e){}
-  /* Иконка — по старому пути; браузер на телефоне — документом. */
-  try{ const u=navigator.userAgent, ver=+((/Version\/(\d+)/.exec(u)||[])[1]||0); return /iPhone|iPad/.test(u)&&/Safari/.test(u)&&ver>=26&&!/CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS|GSA|Telegram|Instagram|FBAN|FBAV|WhatsApp/.test(u)&&!(matchMedia('(display-mode:standalone)').matches||navigator.standalone)&&({956:1,932:1,874:1,852:1,926:1,844:1,896:1,812:1})[screen.height]===1&&(screen.height-innerHeight)<=175; }catch(e){ return false; }
+  /* ДОКУМЕНТОМ КРУТИМ ТОЛЬКО ТАМ, ГДЕ УВЕРЕНЫ — И ЭТО ПРОВЕРЕНО НА ТЕЛЕФОНЕ
+     (опыт `lenta-exp`, владелец 14.09.2026: Safari — под панели, Chrome — в окно,
+     Safari внутри приложения — в окно).
+
+     Прежнее условие «не иконка» отдавало документную прокрутку всем подряд, включая
+     браузеры, где панели НЕ схлопываются: Chrome на iOS, Яндекс.Браузер, встроенный
+     Safari внутри приложения (Telegram, Instagram). Там документная прокрутка даёт
+     не полный экран, а съехавшую ленту: карточка `screen.height` в окне, которое
+     больше никогда не вырастет.
+
+     Уверенность складывается из четырёх признаков, и нужны все четыре:
+     1. вкладка полного Safari 26+ (в нём и появился новый расчёт окна);
+     2. не иконка и не встроенный браузер приложения (у него `Version/` как у Safari,
+        но верх глухой);
+     3. экран из таблицы iPhone — только для них мы знаем высоту часов `T`, а Safari
+        её не сообщает;
+     4. браузер забрал не больше 175 точек: встроенный Safari забирает 218, и это
+        единственный надёжный способ отличить его от полного.
+
+     Не сошлось — классический режим: лента листается ВНУТРИ окна, карточка = окно.
+     Он ничего не выигрывает у панелей, зато никогда не разъезжается. */
+  try{
+    const u=navigator.userAgent, ver=+((/Version\/(\d+)/.exec(u)||[])[1]||0);
+    return /iPhone|iPad/.test(u) && /Safari/.test(u) && ver>=26
+      && !/CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS|GSA|Telegram|Instagram|FBAN|FBAV|WhatsApp/.test(u)
+      && !(matchMedia('(display-mode:standalone)').matches||navigator.standalone)
+      && ({956:1,932:1,874:1,852:1,926:1,844:1,896:1,812:1})[(window.__xVH||(window.__xVH=(()=>{try{const d=document.createElement('div');d.style.cssText='position:absolute;top:0;height:100lvh;visibility:hidden;pointer-events:none';(document.body||document.documentElement).appendChild(d);const v=d.offsetHeight; d.remove(); return v||screen.height;}catch(e){ return screen.height; }})()))]===1
+      && (screen.height-innerHeight)<=175;
+  }catch(e){ return false; }
 })();
 if (ДОКПРОКРУТКА) {
   try{ document.documentElement.classList.add('docscroll'); document.body.classList.add('docscroll'); }catch(e){}
 }
+/* ═══ ДВА РЕЖИМА ЛЕНТЫ, И ТОЛЬКО ДВА ═════════════════════════════════════════
+   `xglass` — карточка выезжает ИЗ-ПОД панелей Safari: она ростом в целый экран
+   (`screen.height`), а снап останавливает её по видимой середине отрицательным
+   `scroll-margin-top` в высоту часов. Высоту часов Safari не сообщает — берём по
+   таблице экранов iPhone, поэтому и режим включается только для них (см. условие
+   `ДОКПРОКРУТКА` выше).
+
+   Всё остальное — классический режим: карточка равна окну, ничего не выезжает.
+
+   `xpwawin` — страховка на иконке: если iOS всё-таки дал окно меньше экрана
+   (894 из 956 — полоса часов глухая), карточка равна ОКНУ, иначе низ с кнопками
+   уезжает за край экрана. С `apple-mobile-web-app-status-bar-style:black-translucent`
+   в шапке этого не случается (проверено 14.09.2026), но замок остаётся: цена
+   ошибки — недоступные кнопки. */
+(function(){
+  try{
+    const корень=document.documentElement;
+    /* Высота ЧАСОВ (верхняя зона) по экрану телефона. Не путать с `safe-area-inset-top`:
+       тот в обычной вкладке равен нулю, пока страница не под панелями. */
+    const ЧАСЫ={956:62,932:59,874:62,852:59,926:47,844:47,896:44,812:44,667:20,736:20};
+    if (корень.classList.contains('docscroll')) {
+      корень.classList.add('xglass');
+      const Э=(window.__xVH||(window.__xVH=(()=>{try{const d=document.createElement('div');d.style.cssText='position:absolute;top:0;height:100lvh;visibility:hidden;pointer-events:none';(document.body||document.documentElement).appendChild(d);const v=d.offsetHeight; d.remove(); return v||screen.height;}catch(e){ return screen.height; }})()));
+      const T=(ЧАСЫ[Э]!=null?ЧАСЫ[Э]:Math.round((Э-innerHeight)*0.4));
+      корень.style.setProperty('--xT', T+'px');
+      корень.style.setProperty('--xscr', Э+'px');
+      window.__xT=T;
+    }
+    /* Страховка и документная прокрутка несовместимы: там высоту столбика задаёт
+       сам документ, и фиксированная высота корня обрывает ленту на первом слайде.
+       Проверяем это ЗДЕСЬ, а не полагаемся на «standalone и docscroll не бывают
+       вместе»: `?doc=1` их сводит, и прогон это поймал.
+
+       Переменную при выключении СНИМАЕМ. Класс и переменная ставятся вместе, но
+       снимался только класс — и хватило одного промаха (класс встал, переменная
+       нет), чтобы лента схлопнулась. Состояние должно быть одно, а не полтора. */
+    const pwaFix=()=>{ try{
+      const сам=matchMedia('(display-mode:standalone)').matches||!!navigator.standalone;
+      /* `!!` ОБЯЗАТЕЛЬНО, И ЭТО НЕ КОСМЕТИКА. `navigator.standalone` есть только у
+         Safari; везде ещё это `undefined`, и тогда `мало` тоже `undefined`. А
+         `classList.toggle(имя, undefined)` — не «поставить по условию», а ПЕРЕКЛЮЧИТЬ:
+         второй аргумент считается непереданным. Класс мигал на каждом вызове и
+         оставался включённым при нечётном их числе — лента схлопывалась там, где
+         страховке делать нечего (прогон `browser_window_check`, 14.09.2026). */
+      const мало=!!(сам && !корень.classList.contains('docscroll') && innerHeight<screen.height-1);
+      корень.classList.toggle('xpwawin', мало);
+      if(мало) корень.style.setProperty('--xwin', innerHeight+'px');
+      else корень.style.removeProperty('--xwin');
+    }catch(e){} };
+    pwaFix();
+    addEventListener('resize', pwaFix);
+    /* Первый вызов случается до того, как iOS сообщит окончательные размеры окна:
+       на `load` пересчитываем, иначе страховка остаётся включённой по устаревшим
+       числам. */
+    addEventListener('load', pwaFix);
+    addEventListener('pageshow', pwaFix);
+  }catch(e){}
+})();
 const ПРОКРУТЧИК = ДОКПРОКРУТКА ? (document.scrollingElement || document.documentElement) : feed;
 /* Кому слушать прокрутку: документ шлёт событие на окно, лента — на себя. */
 const ИСТОЧНИКПРОКРУТКИ = ДОКПРОКРУТКА ? window : feed;
@@ -4744,7 +4900,11 @@ const IC={
   filter:'<path d="M4 6h16M4 12h16M4 18h16"/><circle cx="15.5" cy="6" r="2.4" fill="#1d1a18"/><circle cx="8.5" cy="12" r="2.4" fill="#1d1a18"/><circle cx="15.5" cy="18" r="2.4" fill="#1d1a18"/>',
   /* «В корзину» — та же тележка, но с плюсом внутри (cart.badge.plus): плюс =
      добавить, корзина без плюса в таблетке = посмотреть. */
-  cartplus:'<circle cx="9.5" cy="20" r="1.2"/><circle cx="18" cy="20" r="1.2"/><path d="M2 3h3l2.7 11.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.55L21 7H5.6"/><path d="M13.3 9.6v4.4M11.1 11.8h4.4"/>',
+  /* «В корзину»: тележка с разомкнутым верхом и стрелкой, что дугой заходит
+     внутрь (эскиз владельца 14.09.2026: «стрелочку загнуть изящнее»). Была
+     тележка с плюсом; плюс читался как «ещё один», а не «положить». Тележка,
+     колёса и ручка — те же, что у `cart`. */
+  cartplus:'<circle cx="9.5" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 11.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.55L21 7H16.86M11.52 7H5.95"/><path d="M20.83 1.89C16.45 1.03 13.45 5.55 12.2 9.14L11.18 9.11Q10.68 9.09 10.93 9.53L12.74 12.72Q12.9 13 13.12 12.77L15.69 10.14Q16.04 9.78 15.54 9.77L14.52 9.74C15 6.72 16.91 2.46 20.57 2.91A0.53 0.53 0 0 0 20.83 1.89Z" fill="currentColor" stroke="none"/>',
   list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
   /* «вернуться в ленту» — один кадр во весь экран: та же метафора, что у рилсов */
   reel:'<rect x="6" y="3" width="12" height="18" rx="3"/><path d="M10 12h4"/>',
@@ -4778,7 +4938,11 @@ const IC={
   user:'<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
   x:'<path d="M6 6l12 12M18 6L6 18"/>',
-  share:'<circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.4 13.4l7.2 4.2M15.6 6.4l-7.2 4.2"/>',
+  /* «Поделиться» — толстенькая загнутая стрелка, как на утверждённом холсте
+     docs/design/feed-bottom-bar/ (владелец 13.09.2026: «Поделиться вот такая
+     иконка должна быть»). Три точки с рёбрами ушли: при реализации #3227 их
+     забыли заменить, владелец заметил 14.09 («куда оно пропало?»). */
+  share:'<path d="M13.5 4.5 21 11.5l-7.5 7v-4.2C8.3 14.3 5 16.2 3 20c.6-6.3 4.4-10.6 10.5-11.3z"/>',
   eye:'<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/>',
   pin:'<path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/>',
   clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
@@ -10106,6 +10270,10 @@ function syncL3Band(){
 function переложитьНаСлайд(){
   try{
     if(!ДОКПРОКРУТКА) return;                    // ящик сам держит позицию
+    /* В стеклянном режиме позицию держит снап с отрицательным `scroll-margin-top`,
+       и досылка скриптом только мешает: она равняет карточку по краю ОКНА, то есть
+       стаскивает её обратно из-под часов — ровно то, ради чего режим и сделан. */
+    if(document.documentElement.classList.contains('xglass')) return;
     if(VIEW==='grid') return;                    // в плитке слайдов нет
     if(ЛЕНТАЕДЕТ) return;                        // под пальцем не трогаем
     /* Довершаем сдвиг ТОЛЬКО когда лента уже почти на границе idx — иначе
@@ -10155,43 +10323,14 @@ try{
     window.visualViewport.addEventListener('scroll',()=>{ переложитьНаСлайд(); окноДобор(); выровнятьПодпись(); },{passive:true});
   }
 }catch(e){}
-/* `dvh` Safari пересчитывает ПОСЛЕ того, как визуальный вьюпорт уже сменился:
-   в момент события окна слайд ещё старой высоты, и доборы считаются от него.
-   Досчитать, когда слайд встал в новую высоту, может только наблюдатель за
-   самим слайдом — иначе остаётся хвост добора и подпись уезжает. */
-try{
-  if(window.ResizeObserver&&feed){
-    let наблюдаемый=null;
-    const ro=new ResizeObserver(()=>{ окноДобор(); выровнятьПодпись(); });
-    const следить=()=>{ const s=feed.firstElementChild;
-      if(s&&s!==наблюдаемый){ if(наблюдаемый) ro.unobserve(наблюдаемый); ro.observe(s); наблюдаемый=s; } };
-    следить(); new MutationObserver(следить).observe(feed,{childList:true});
-  }
-}catch(e){}
 const ЗАЗОР_НАДО=13;
 function выровнятьПодпись(){
   try{
-    /* Слайд РАВЕН видимому окну (на телефоне это `dvh`) — зазор сходится по
-       построению, добирать нечего. Решаем по геометрии, а не по типу
-       устройства: там, где слайд всё-таки выше окна (старый iOS без `dvh`,
-       миг до пересчёта `dvh`), подгонка ниже нужна по-прежнему. */
-    if(document.documentElement.classList.contains('docscroll')){
-      const s=feed&&feed.firstElementChild, h=s?s.offsetHeight:0;
-      const окно=(window.visualViewport&&window.visualViewport.height)||innerHeight;
-      if(h&&Math.abs(h-окно)<1){ document.documentElement.style.setProperty('--cap-добор','0px'); return; }
-    }
     const з=зазорПодписи();
     if(з===null) return;
-    /* ПОДПИСЬ УПОЛЗАЛА ВВЕРХ (владелец 14.09.2026: «куда уезжает надпись»).
-       Подгонка накопительная: `было + (13 − з)`. Если мерили подпись, которая
-       сейчас не раскладывается (слайд вне экрана), её зазор не отвечал на добор
-       — и добор рос на каждой прокрутке без конца. Поэтому мерим только ту, что
-       на экране, и держим добор в разумном потолке. */
-    const сл=(typeof слайдПо==='function')&&слайдПо(idx);
-    if(сл){ const r=сл.getBoundingClientRect(); if(r.bottom<=0||r.top>=innerHeight) return; }
     const корень=document.documentElement;
     const было=parseFloat(getComputedStyle(корень).getPropertyValue('--cap-добор'))||0;
-    const надо=Math.min(Math.round(innerHeight/3), Math.max(0, было + (ЗАЗОР_НАДО - з)));
+    const надо=Math.max(0, было + (ЗАЗОР_НАДО - з));
     if(Math.abs(надо-было)>=1) корень.style.setProperty('--cap-добор', Math.round(надо)+'px');
   }catch(e){}
 }
@@ -10435,7 +10574,15 @@ const номерИзбранного=()=>view.length;
    Отсюда же следует, почему подрезка головы безопасна. Убирая `убрано` слайдов, мы
    увеличиваем `окноОт` на столько же и на столько же уменьшаем `scrollTop` — сумма
    не меняется, то есть для всей остальной ленты не происходит ничего. */
-const позицияЛенты=()=>{ const h=высотаСлайда(); if(!h) return окноОт; let E=0; try{ if(ДОКПРОКРУТКА&&document.documentElement.classList.contains("xglass")) E=window.__xT||0; }catch(e){} return окноОт+(ПРОКРУТЧИК.scrollTop-E)/h; };
+/* В стеклянном режиме лента стоит не на нуле: карточка сдвинута отрицательным
+   `scroll-margin-top` на высоту часов. Без вычета этой поправки позиция врала на
+   T точек — и разгон соседнего ролика ждал, пока палец пройдёт эти T. */
+const позицияЛенты=()=>{
+  const h=высотаСлайда(); if(!h) return окноОт;
+  let E=0;
+  try{ if(ДОКПРОКРУТКА && document.documentElement.classList.contains('xglass')) E=window.__xT||0; }catch(e){}
+  return окноОт+(ПРОКРУТЧИК.scrollTop-E)/h;
+};
 
 /* В начало ВЫДАЧИ, а не в начало разметки. После подрезки первый нарисованный слайд
    — вовсе не первый букет, и `scrollTo({top:0})` привёл бы человека не туда, куда
@@ -10602,7 +10749,11 @@ function build(){
 
      При активном фильтре не трогаем: там `view` только что собрал `applyFilter`,
      и он же учитывает условия. */
-  if(!fActive()) view=baseOrder();
+  /* Заданный порядок переживает пересборку: без этого лента, собранная
+     `applyFilter`, тут же возвращалась бы к обычному порядку. Интро в
+     отсортированной ленте не показываем по той же причине, что и под
+     фильтром: карточка без цены разрывает объясняющий позицию ряд. */
+  if(!fActive()) view=сортЛенту(baseOrder().filter(i=>!(F.sort&&B[i].hero)));
   /* слайды выбрасываются целиком — снимаем видео, чтобы не текли декодеры */
   [].forEach.call(feed.children,unmountSlide);
   feed.innerHTML='';
@@ -12591,6 +12742,35 @@ function зумПоТочкам(shot,свой,рама,ширинаИсходн�
    кэшированного кадра придёт не сразу (и может не прийти вовсе). Поэтому форма
    запоминается по АДРЕСУ кадра и ставится сразу при сборке, до всяких событий.
    Адрес — тот же файл, значит и форма та же; ошибиться тут нечем. */
+/* ВИДИМАЯ ВЫСОТА КАДРА — ВХОД ПРАВИЛА ОБРЕЗКИ, А НЕ САМО ПРАВИЛО.
+   Правило размера и зумов заморожено (`scripts/frame_rule_frozen_check.py`) и здесь
+   не трогается: меняется только число, которое ему подают на вход.
+
+   В стеклянном режиме карточка ростом в ЭКРАН (956), а видно из неё окно (796–836):
+   считая раму по карточке, витрина при каждом схлопывании панелей пересчитывала
+   кадрирование и давала «зум-анзум» — картинка дёргалась туда-обратно. Берём высоту
+   видимого окна `100lvh`, меряя её ОДИН раз: у `lvh` по определению нет зависимости
+   от состояния панелей, значит и повода пересчитывать нет. */
+let __видимаяВысота=0;
+function лвх(){
+  if(__видимаяВысота) return __видимаяВысота;
+  try{
+    const d=document.createElement('div');
+    d.style.cssText='position:absolute;top:0;height:100lvh;visibility:hidden;pointer-events:none';
+    document.body.appendChild(d);
+    const v=d.offsetHeight; d.remove();
+    __видимаяВысота=v||innerHeight;
+  }catch(e){ __видимаяВысота=innerHeight; }
+  return __видимаяВысота;
+}
+function видимаяВысотаКадра(shot){
+  try{
+    if(ДОКПРОКРУТКА && document.documentElement.classList.contains('xglass')){
+      return Math.min(shot.clientHeight, лвх());
+    }
+  }catch(e){}
+  return shot.clientHeight;
+}
 const ФОРМЫ=new Map();
 function ключФормы(el){
   try{ return el.getAttribute('src')||el.dataset&&el.dataset.src||el.getAttribute('poster')||''; }
@@ -12621,7 +12801,7 @@ function подогнатьКадрирование(el){
     /* Слово за `.fg`: постер — его дубль, и если они разойдутся, кадрирование
        начнёт зависеть от того, что успело загрузиться первым. */
     if(!свои&&shot.__рамкаОтFg) return;
-    const рама=shot.clientWidth/((ДОКПРОКРУТКА&&document.documentElement.classList.contains("xglass"))?Math.min(shot.clientHeight,(window.__xH||(window.__xH=(()=>{const d=document.createElement("div");d.style.cssText="position:absolute;top:0;height:100lvh;visibility:hidden";document.body.appendChild(d);const v=d.offsetHeight;d.remove();return v||innerHeight;})()))):shot.clientHeight); if(!рама||!isFinite(рама)) return;
+    const рама=shot.clientWidth/видимаяВысотаКадра(shot); if(!рама||!isFinite(рама)) return;
     shot.__кадр=[w,h];                       // пригодится при повороте экрана
     if(свои) shot.__рамкаОтFg=true;
     применитьКадрирование(shot,w/h,рама,w);
@@ -12658,7 +12838,7 @@ addEventListener('resize',()=>{
     try{
       document.querySelectorAll('.photo').forEach(shot=>{
         const d=shot.__кадр; if(!d) return;
-        const рама=shot.clientWidth/((ДОКПРОКРУТКА&&document.documentElement.classList.contains("xglass"))?Math.min(shot.clientHeight,(window.__xH||(window.__xH=(()=>{const d=document.createElement("div");d.style.cssText="position:absolute;top:0;height:100lvh;visibility:hidden";document.body.appendChild(d);const v=d.offsetHeight;d.remove();return v||innerHeight;})()))):shot.clientHeight); if(!рама||!isFinite(рама)) return;
+        const рама=shot.clientWidth/видимаяВысотаКадра(shot); if(!рама||!isFinite(рама)) return;
         применитьКадрирование(shot,d[0]/d[1],рама,d[0]);
       });
     }catch(e){}
@@ -19906,7 +20086,7 @@ function fbThanks(number,files,rejected){
    Бюджет стоит первым: это то, с чем человек приходит, и он же переключает размер
    внутри карточки — под «до 3 000 ₽» открывается самый КРУПНЫЙ размер, влезающий
    в сумму, а не самый дешёвый (ADR-0013). */
-const F={q:'',price:null,qty:null,cm:null,мир:'все',vid:new Set(),kind:new Set(),occ:new Set(),colors:new Set(),add:new Set(),form:new Set()};
+const F={q:'',sort:'',price:null,qty:null,cm:null,мир:'все',vid:new Set(),kind:new Set(),occ:new Set(),colors:new Set(),add:new Set(),form:new Set()};
 /* МИР — «всё / цветы / не цветы» (владелец, 12.09.2026: «может, просто
    переключатель „не цветы“»; и следом — «шары бывают самостоятельными
    букетами например»). Это НЕ фасет: фасет отвечает «какой букет», а мир —
@@ -19951,6 +20131,96 @@ const fbarEl=document.getElementById('fbar');
 const fCount=()=>SETS.reduce((n,k)=>n+F[k].size,0)+RANGES.reduce((n,k)=>n+(F[k]?1:0),0)
   +(qText()?1:0)+(F.мир!=='все'?1:0);
 const fActive=()=>fCount()>0;
+
+/* ---- ПОРЯДОК: явная сортировка (владелец, 14.09.2026) ---------------------
+   «В фильтр нужно добавить сортировку, по цене особенно актуальна».
+
+   ЭТО НЕ УСЛОВИЕ. Сортировка ничего не отсекает: состав выдачи и число на
+   кнопке «Смотреть N букетов» она не меняет. Поэтому её нет в `fCount()` — иначе
+   счётчик условий говорил бы о том, чего не сузили. По той же причине она живёт
+   отдельной строкой, а не среди фасетов.
+
+   СИЛЬНЕЕ НАШИХ ДОГАДОК, СЛАБЕЕ ФИЛЬТРОВ (решение владельца). Пока порядок
+   задан явно, молчат: лестница бюджета по localStorage (ADR-0020), лицо от
+   сборщика (`di`), сезонное лицо, потолок `ЛИЦО_ПОТОЛОК`, ранжирование
+   личное → сезон → спрос (ADR-0044), разнообразие по свободным осям (ADR-0057 §5)
+   и ЗАКРЕПЛЕНИЕ ВЛАДЕЛЬЦА. Всё это — предположения о человеке либо наш выбор за
+   него; он сказал прямо, и предположения замолкают. Табу при этом остаётся
+   жёстким: это запрет, а не догадка, и его снимать нечем.
+
+   ЧИСЛО В КАДРЕ ОБЪЯСНЯЕТ ПОЗИЦИЮ. Карточка встаёт на тот размер, по цене
+   которого она попала на своё место, и его же показывает. Иначе лента шла бы
+   1 190 → 1 240 → 7 680 → 1 450: цена в кадре от лица семьи, а место — от
+   самого дешёвого её размера, и проверить нас глазами нельзя. Второго,
+   дешёвого числа на карточке при этом НЕ появляется никогда (владелец: якорь
+   вниз тянет средний чек).
+
+   РАЗМЕР ВЫБИРАЕТСЯ ТОЛЬКО СРЕДИ ПРОШЕДШИХ ФИЛЬТРЫ. Бюджет 3000–5000 и
+   «сначала дешевле» — карточка встаёт на самый дешёвый В КОРИДОРЕ, а не на
+   вариант за 1200: коридор человек задал сам, вылезать из него значит снова
+   гадать за него. */
+const ПОРЯДКИ=[['','Как обычно'],['cheap','Сначала дешевле'],
+  ['rich','Сначала дороже'],['value','Больше цветов за деньги']];
+const сортИмя=v=>{ const p=ПОРЯДКИ.find(x=>x[0]===v); return p?p[1]:''; };
+/* Размер годится для сортировки, если он вообще продаётся (цена есть, не скрыт)
+   и проходит ВСЕ диапазоны фильтра. Те же `inR`, что у `fitRanges`: два разных
+   ответа на «влезает ли размер в условия» разошлись бы при первой правке. */
+const сортГоден=c=>!!c&&+c.price>0&&пригодна(c)
+  &&inR(c.price,F.price)&&inR(c.n,F.qty)&&inR(c.cm,F.cm);
+/* Ключ сортировки и размер, который его дал, — одним проходом.
+   `value` («больше цветов за деньги») считает цену за цветок; у нецветочного
+   количества нет, и делить не на что — такие карточки уходят в хвост, а не
+   притворяются выгодными делением на единицу. */
+function сортВыбор(i){
+  const a=cfgs(i); let ci=-1, key=0;
+  for(let k=0;k<a.length;k++){
+    const c=a[k]; if(!сортГоден(c)) continue;
+    let z;
+    if(F.sort==='value'){ const n=+c.n||0; if(n<=0) continue; z=(+c.price)/n; }
+    else z=+c.price;
+    if(ci<0||(F.sort==='rich'?z>key:z<key)){ ci=k; key=z; }
+  }
+  return ci<0?null:{ci:ci,key:key};
+}
+/* ЧТО БЫЛО ДО СОРТИРОВКИ. Снятая сортировка обязана вернуть карточкам их
+   прежние размеры: иначе «сначала дешевле» один раз — и весь каталог навсегда
+   остался показывать свои минимальные цены, то есть ровно тот якорь вниз,
+   который запрещён. Возвращаем только то, что с тех пор не трогали руками:
+   сравниваем текущий размер с тем, который поставила сортировка. */
+const СОРТ_БЫЛО=new Map();
+function сортВернутьРазмеры(){
+  СОРТ_БЫЛО.forEach((п,i)=>{ const s=st[i];
+    if(s&&s.ci===п.стало) s.ci=п.было; });
+  СОРТ_БЫЛО.clear();
+}
+/* Сортировка порядка И размеров внутри карточек. Без заданного порядка —
+   тождество: ни одной лишней операции на обычной ленте. */
+function сортЛенту(v){
+  if(!F.sort) return v;
+  const ключ=new Map();
+  const хвост=[];
+  const годные=[];
+  v.forEach(i=>{ const в=сортВыбор(i);
+    if(!в){ хвост.push(i); return; }
+    const s=st[i]||(st[i]={});
+    if(!СОРТ_БЫЛО.has(i)) СОРТ_БЫЛО.set(i,{было:s.ci,стало:в.ci});
+    else СОРТ_БЫЛО.get(i).стало=в.ci;
+    s.ci=в.ci; ключ.set(i,в.key); годные.push(i); });
+  /* Устойчивая (ES2019): равные цены сохраняют порядок сборщика, то есть
+     решает качество медиа. Разбивать ничьи чем-то ещё нельзя — лента тасовалась
+     бы от сборки к сборке без причины. */
+  const знак=F.sort==='rich'?-1:1;
+  годные.sort((a,b)=>(ключ.get(a)-ключ.get(b))*знак);
+  /* Карточки без подходящего размера — в хвост, в исходном порядке. Выкинуть их
+     нельзя: сортировка не отсекает, и счётчик «Смотреть N» остаётся прежним. */
+  return хвост.length?годные.concat(хвост):годные;
+}
+function setSort(v){
+  if(!ПОРЯДКИ.some(p=>p[0]===v)||F.sort===v) return;
+  if(!v) сортВернутьРазмеры();
+  F.sort=v;
+  refreshSheet(); renderFbar(); applyFilter(true);
+}
 
 /* ---- свободный поиск по фразе (#263, просьба Макса) -----------------------
    «Корзинка» или «сиреневый» — иногда это быстрее, чем ходить по фасетам. Фраза —
@@ -21194,6 +21464,16 @@ function filterHTML(){
       +` onclick="setМир('${v}')">${t}</button>`;
     h+=`<div class="szrow fmir">`+мир('все','Всё')+мир('цветы','Цветы')+мир('нецветы','Не цветы')+`</div>`;
   }
+  /* ПОРЯДОК — ВЫШЕ УСЛОВИЙ, НО НИЖЕ МИРА. Мир отвечает «мы вообще про букеты
+     или про шары», и раньше него спрашивать нечего. Всё остальное в панели —
+     условия, они сужают; порядок не сужает, и стоять среди них он не должен,
+     иначе читался бы как ещё один отбор. Отсюда место между ними.
+     Строка рисуется всегда: сортировать по цене можно любой каталог, а
+     пропадающий контрол человек ищет там, где видел его в прошлый раз. */
+  h+=`<div class="flabel">ПОРЯДОК</div><div class="szrow fsort">`
+    +ПОРЯДКИ.map(([v,t])=>`<button class="szchip${F.sort===v?' sel':''}" aria-pressed="${F.sort===v}"`
+      +` onclick="setSort('${v}')">${t}</button>`).join('')
+    +`</div>`;
   h+=qHTML();
   h+=priceHTML();
   /* «ЦВЕТОВ», А НЕ «РОЗ». Подпись осталась с тех времён, когда каталог был из
@@ -21286,7 +21566,7 @@ function filterHTML(){
   h+= n
     ? `<div class="sheetfoot ffoot"><div class="frow">`
       +`<button class="buycta fapply" onclick="flushApply()">Смотреть ${n} ${plural(n)}</button>`
-      +((fActive()||qНеПримен)?`<button class="freset" onclick="resetFilter()">Сбросить</button>`:'')
+      +((fActive()||qНеПримен||F.sort)?`<button class="freset" onclick="resetFilter()">Сбросить</button>`:'')
       +`</div></div>`
     : `<div class="sheetfoot ffoot">`
       +`<p class="fnone">Под такое сочетание букетов нет. Раздвиньте диапазон или снимите условие.</p>`
@@ -21351,6 +21631,30 @@ function scheduleApply(){ clearTimeout(applyT);
 /* «Смотреть N букетов» — применить немедленно, не дожидаясь отложенной перестройки,
    и уйти в ленту. Разметка звала эту функцию с самого появления панели, а самой функции
    не было: тап ронял ReferenceError, и кнопка выглядела намертво мёртвой (#253). */
+/* ═══ ВЫХОД ИЗ ФИЛЬТРА — В ПЛИТКУ ═══════════════════════════════════════════
+   Макс, 14.09.2026: «после поиска нужно показывать плитку, а к ленте
+   возвращаться только когда тыкнул на продукт и листает»; владелец: «переключаем
+   как Макс сказал».
+
+   Момент один и он явный — кнопка «Смотреть N букетов». Не выбор чипа и не
+   открытие панели: человек сам сузил каталог до сравнимого набора, а сравнивают
+   сеткой. Лента — место, где букет продаётся, плитка — где его выбирают из
+   нескольких. Тап по плитке уводит обратно в ленту на этот букет (`catOpen`), и
+   возврат встаёт туда же, где стояли (`catScroll`).
+
+   «Сбросить» сюда НЕ входит намеренно: это «покажи всё», то есть возврат к
+   просмотру, а не к сравнению, и вид там остаётся тот, в котором человек был.
+
+   ВЫБОР ЧЕЛОВЕКА НЕ ТЕРЯЕМ — тот же приём, что у поворота телефона
+   (`поворотПерестроил`): переключение наше, поэтому в память кладём обратно то,
+   что человек выбрал САМ. Иначе один фильтр навсегда переписал бы ему любимый
+   вид. */
+function вПлиткуПослеФильтра(){
+  if(VIEW==='grid') return;                 // уже плитка — переключать нечего
+  let свой='feed'; try{ свой=localStorage.getItem(VLS)||'feed'; }catch(e){}
+  setView('grid');
+  try{ localStorage.setItem(VLS,свой); }catch(e){}
+}
 function flushApply(){ clearTimeout(applyT); applyT=null;
   /* Осознанное «показать это» — единственный момент, когда набор условий заслуживает
      собственного шага истории: тогда «назад» вернёт прежний набор, а не выкинет с сайта.
@@ -21359,7 +21663,8 @@ function flushApply(){ clearTimeout(applyT); applyT=null;
      Запись отложена: closeSheet() сейчас позовёт history.back() и снимет шаг самой
      шторки — вставать в историю надо после этого, из popstate. */
   pendingFilterPush=sheetOpen;
-  applyFilter(); }
+  applyFilter();
+  вПлиткуПослеФильтра(); }
 /* ---- геометрия рядов: чипы не двигаются под пальцем (#299) ----------------
    Исчезновение невозможных вариантов оставляем — загнать себя в пустую выдачу нельзя,
    и это сильная сторона панели. Ломала доверие не пропажа, а мгновенное перестроение:
@@ -21488,6 +21793,9 @@ function setМир(v){
   }
   refreshSheet(); renderFbar(); applyFilter(true); }
 function resetFilter(){ clearTimeout(freezeT); freezeT=null; FROZEN=null; qНеПримен=false; F.мир='все';
+  /* Порядок сбрасывается вместе с условиями: «Сбросить» обещает чистый лист,
+     а лента, оставшаяся отсортированной, чистым листом не выглядит. */
+  сортВернутьРазмеры(); F.sort='';
   F.q=''; RANGES.forEach(k=>F[k]=null); SETS.forEach(k=>F[k].clear()); applyFilter();
   /* applyFilter() без keepSheet закрывает панель — но пока «назад» доедет до
      попстейта (#3019), человек уже видит старые ползунки и «Смотреть 1 букет».
@@ -21502,8 +21810,8 @@ function resetFilter(){ clearTimeout(freezeT); freezeT=null; FROZEN=null; qНе�
    перезагрузки не возвращалась, а снятый признак `size` вообще ронял скрипт (#253).
    Теперь обе стороны ходят по одним и тем же SETS и RANGES, разойтись им нечем.
    Версия — чтобы состояние чужой раскладки полей не толковалось молча и наугад. */
-const FVER=3;   // 3: добавилась фраза свободного поиска (#263)
-function filterDump(){ const o={v:FVER,q:qText()};
+const FVER=4;   // 4: добавился заданный порядок (сортировка)
+function filterDump(){ const o={v:FVER,q:qText(),s:F.sort};
   SETS.forEach(k=>o[k]=[...F[k]]);
   RANGES.forEach(k=>o[k]=F[k]?{min:F[k].min,max:F[k].max}:null);
   return o; }
@@ -21511,9 +21819,13 @@ function filterDump(){ const o={v:FVER,q:qText()};
    выгрузка могла сдвинуть края, и условие «до 82 380 ₽» из прошлой сборки не должно
    превращаться в пустую ленту. Требует уже посчитанных DOM (buildDomains). */
 function filterRestore(f){
-  F.q=''; SETS.forEach(k=>F[k].clear()); RANGES.forEach(k=>F[k]=null);
+  F.q=''; F.sort=''; SETS.forEach(k=>F[k].clear()); RANGES.forEach(k=>F[k]=null);
   if(!f||typeof f!=='object'||f.v!==FVER) return false;
   if(typeof f.q==='string') F.q=f.q.slice(0,80);   // потолок: в фильтр не льют романы
+  /* Порядок сверяем со списком, а не берём как есть: чужая строка в `F.sort`
+     сделала бы `сортВыбор` вечно пустым, и лента молча ушла бы в хвостовой
+     порядок. */
+  if(typeof f.s==='string'&&ПОРЯДКИ.some(x=>x[0]===f.s)) F.sort=f.s;
   SETS.forEach(k=>{ const a=f[k]; if(Array.isArray(a)) a.forEach(v=>{ if(typeof v==='string') F[k].add(v); }); });
   RANGES.forEach(k=>{ const r=f[k], d=DOM[k]||[];
     if(!r||typeof r.min!=='number'||typeof r.max!=='number'||d.length<2) return;
@@ -21548,9 +21860,12 @@ function filterSelfTest(){
   return bad.length?{ок:false,сломано:bad}:{ок:true,полей:SETS.length+RANGES.length+2}; }
 function applyFilter(keepSheet){
   /* при активном фильтре интро не показываем — иначе кажется, что ничего не изменилось */
-  view=baseOrder().filter(i=>matches(i)&&!(fActive()&&B[i].hero));
+  view=baseOrder().filter(i=>matches(i)&&!((fActive()||F.sort)&&B[i].hero));
   if(F.price||F.qty||F.cm) view.forEach(fitRanges);  // условия выбирают и размер внутри карточки
   if(qText()) view.forEach(fitQuery);                // фраза — тоже: см. fitQuery
+  /* ПОСЛЕДНИМ: заданный порядок сильнее наших догадок о размере, но считает
+     его уже по тому, что прошло условия. */
+  view=сортЛенту(view);
   build(); summary(); renderFbar(); if(!keepSheet) closeSheet();
   вНачалоЛенты(false); idx=0; playCurrent(); saveState(); syncFilterUrl(); }
 /* ADR-0013: под бюджет открываем самый КРУПНЫЙ размер, влезающий в условия, —
@@ -21580,6 +21895,13 @@ function renderFbar(){
      Плашка своя, а не через общий `dropF`: тот снимает значение из наборов, а
      мир возвращается в «все». Заодно нет и путаницы, если в каталоге когда-то
      заведётся вид с именем «Цветы». */
+  /* ПОРЯДОК — ПЕРВОЙ ПЛАШКОЙ, ДО УСЛОВИЙ. Он не сужает выдачу, и путать его с
+     «Красные» нельзя; а снимать его одним тапом надо ровно так же, как условие,
+     иначе выйти из отсортированной ленты можно только через панель. */
+  const сортПлашка=F.sort
+    ? `<button type="button" class="fpill fsortpill" aria-label="Вернуть обычный порядок"`
+      +` onclick="setSort('')">${сортИмя(F.sort)} <b aria-hidden="true">×</b></button>`
+    : '';
   const мирПлашка=(F.мир!=='все'&&мирЕсть())
     ? `<button type="button" class="fpill" aria-label="Убрать условие: ${F.мир==='цветы'?'Цветы':'Не цветы'}"`
       +` onclick="setМир('все')">${F.мир==='цветы'?'Цветы':'Не цветы'} <b aria-hidden="true">×</b></button>`
@@ -21588,7 +21910,7 @@ function renderFbar(){
     b.classList.toggle('on',fActive());
     const c=b.querySelector('.fcnt'); if(c) c.textContent=fCount()||'';
   });
-  if(!pills.length&&!мирПлашка){ fbarEl.classList.remove('show'); fbarEl.innerHTML=''; return; }
+  if(!pills.length&&!мирПлашка&&!сортПлашка){ fbarEl.classList.remove('show'); fbarEl.innerHTML=''; return; }
   const n=countMatches();
   /* Плашка активного условия — настоящая кнопка, а не span с onclick (СВ-61): с клавиатуры
      до неё было не добраться, а экранный диктор читал её обычным текстом, хотя единственное
@@ -21606,6 +21928,7 @@ function renderFbar(){
      «сколько букетов осталось» всегда в одной точке. */
   fbarEl.innerHTML=`<button type="button" class="fcount" aria-label="Открыть фильтр: найдено ${n} ${plural(n)}"`
     +` onclick="openFilter()">${n} ${plural(n)}</button>`
+    +сортПлашка
     +мирПлашка
     +pills.map(v=>`<button type="button" class="fpill" aria-label="Убрать условие: ${v}"`
     +` onclick="dropF('${v}')">${v} <b aria-hidden="true">×</b></button>`).join('');
@@ -22362,11 +22685,13 @@ const slugv=s=>String(s).toLowerCase().split('')
   .replace(/-+/g,'-').replace(/^-|-$/g,'');
 const QSET={vid:'vid',kind:'kind',occ:'occ',colors:'color',add:'add',form:'form'};
 const QRNG={price:'price',qty:'qty',cm:'cm'};
+const QSORT='sort';
 function filterQuery(){
   const p=[];
   /* Фраза едет в адрес как есть, а не слагом: её пишет человек, и присланная ссылка
      должна открываться с тем же словом, которое он набрал. */
   if(qText()) p.push('q='+encodeURIComponent(qText()));
+  if(F.sort) p.push(QSORT+'='+F.sort);
   SETS.forEach(k=>{ if(F[k].size) p.push(QSET[k]+'='+[...F[k]].map(slugv).join(',')); });
   RANGES.forEach(k=>{ if(F[k]) p.push(QRNG[k]+'='+F[k].min+'-'+F[k].max); });
   return p.join('&'); }
@@ -22393,6 +22718,10 @@ function filterFromQuery(q){
   let any=false;
   const rq=q.get('q');
   if(rq&&rq.trim()){ F.q=rq.trim().slice(0,80); any=true; }
+  /* Присланная ссылка на отсортированную подборку открывается отсортированной:
+     порядок — часть того, что человек показывал, а не настройка получателя. */
+  const rs=q.get(QSORT);
+  if(rs&&ПОРЯДКИ.some(x=>x[0]===rs)&&rs){ F.sort=rs; any=true; }
   SETS.forEach(k=>{ const raw=q.get(QSET[k]); if(!raw) return;
     const known=optionsOf(k).map(([v])=>v);
     raw.split(',').map(s=>s.trim()).filter(Boolean).forEach(w=>{
@@ -22429,7 +22758,7 @@ function syncFilterUrl(){ try{ history.replaceState(history.state,'',filterHref(
    Новая вкладка и присланная ссылка начинают с чистого листа, фильтр в них честно
    применяется. Причину тормозов чинит #1139 — здесь только выход из ловушки. */
 const FGUARD='nr.feed.boot';
-const FKEYS=['q'].concat(SETS.map(k=>QSET[k]),RANGES.map(k=>QRNG[k]));
+const FKEYS=['q',QSORT].concat(SETS.map(k=>QSET[k]),RANGES.map(k=>QRNG[k]));
 /* Ключ считаем по адресу, а не по F: сравнивать надо ровно то, с чем страница открылась.
    Чужие параметры (?selftest, ?paid, ?reset) в ключ не попадают — они не фильтр. */
 function urlFilterKey(){
@@ -22842,7 +23171,9 @@ if(fguardHung){ try{ toast('Лента не открылась с фильтро
 
          Плитка в этот путь не идёт: она рисует ВЕСЬ `view` страницами, и
          прибавка каталога для неё — настоящая пересборка. */
-      const дёшево = !fActive() && VIEW !== 'grid' && (() => {
+      /* Заданный порядок дешёвого пути не имеет: приехавшие строки надо
+         расставить по цене среди уже нарисованных, а не дописать в хвост. */
+      const дёшево = !fActive() && !F.sort && VIEW !== 'grid' && (() => {
         const нарисованныйКусок = view.slice(окноОт, нарисовано);
         const новый = baseOrder();
         if(новый.length < нарисовано) return false;
@@ -23751,61 +24082,27 @@ document.addEventListener('keydown',e=>{
 <script>
 (function(){
   const el=document.getElementById('xdiag');
-  /* досылка позиции скриптом стаскивала бы карточку к краю окна — на опыте выключена */
-  try{ переложитьНаСлайд=function(){}; }catch(e){}
   try{
     const st=document.createElement('style');
-    const u=navigator.userAgent, ver=+((/Version\/(\d+)/.exec(u)||[])[1]||0);
-    const GLASS=/iPhone|iPad/.test(u)&&/Safari/.test(u)&&ver>=26&&!/CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS|GSA|Telegram|Instagram|FBAN|FBAV|WhatsApp/.test(u)
-      &&!(matchMedia('(display-mode:standalone)').matches||navigator.standalone)
-      /* Safari внутри приложения представляется как полный, но верх у него глухой и забирает больше: 218 против 120–160 */
-      &&(screen.height-innerHeight)<=175;
-    /* ДВА РЕЖИМА. Стеклянный — только при полной уверенности: вкладка полного Safari 26+,
-       экран из таблицы (известна высота часов), забрано ≤175 (встроенный Safari забирает 218).
-       Иначе — классический: карточка = окно, тёмные шторки за краями окна. */
-    /* PWA: если iOS дал окно меньше экрана (894 из 956 — полоса часов глухая), карточка = окно, иначе низ с кнопками уезжает за экран */
-    const pwaFix=()=>{ try{ const d=document.documentElement;
-      const sa=matchMedia('(display-mode:standalone)').matches||navigator.standalone;
-      const short=sa&&innerHeight<screen.height-1;
-      d.classList.toggle('xpwawin',short); if(short) d.style.setProperty('--xwin',innerHeight+'px'); }catch(e){} };
-    pwaFix(); addEventListener('resize',pwaFix);
-    const TT0={956:62,932:59,874:62,852:59,926:47,844:47,896:44,812:44}[screen.height];
-    const GL=document.documentElement.classList.contains('docscroll');
-    if(GL) document.documentElement.classList.add('xglass');
-    else ['top','bottom'].forEach(k=>{ const c=document.createElement('div');
-      c.style.cssText='position:fixed;left:0;right:0;height:400px;z-index:40;pointer-events:none;background:#0b0a09;'+(k==='top'?'bottom:100%':'top:100%');
-      document.body.appendChild(c); });
-    const H=screen.height+'px', E='('+H+' - 100dvh)';
-    /* высота часов (верхняя зона): Safari её не сообщает — по таблице экранов iPhone */
-    const TT={956:62,932:59,874:62,852:59,926:47,844:47,896:44,812:44,667:20,736:20}[screen.height];
-    const T=(TT!=null?TT:Math.round((screen.height-innerHeight)*0.4))+'px';
-    document.documentElement.style.setProperty('--xT',T); window.__xT=GL?parseFloat(T):0;
     st.textContent=
-      /* карточка = окно + 2 × запас; запас = screen − окно (закрывает зоны часов и нижней строки) */
-      /* только телефон с прокруткой документом: на десктопе карточка в рамке, панелей поверх нет */
-      '@media (hover:none) and (pointer:coarse){'+
-      'html.docscroll.xglass .slide{height:'+H+'!important;'+
-      /* снап останавливает по видимой середине: отрицательные поля на запас */
-      'scroll-snap-align:start!important;scroll-margin-top:calc(-1 * '+T+')!important;scroll-margin-bottom:0!important}'+
-      /* подпись поднимается на запас, чтобы стоять над «Купить» */
-      'html.docscroll.xglass{--окно-добор:calc'+E+'!important}'+
-      /* подпись прибита к кнопкам, а не к картинке: стоит на месте, при листании только гаснет */
-      'html.docscroll.xglass .slide:not(.hero) .cap{--окно-добор:calc('+H+' - '+T+' - 100dvh)!important}'+
-      'html.docscroll .slide:not(.xcur) .cap{opacity:0!important;visibility:hidden!important}}'+
-      'html.xglass{--cap-добор:0px!important}'+
-      'html.xpwawin,html.xpwawin body{height:var(--xwin)!important}html.xpwawin .feed{height:var(--xwin)!important}html.xpwawin .slide{height:var(--xwin)!important}'+
-      /* узкое окно ПК: стрелки листания левее рельса, а не на нём */
-      '@media (hover:hover) and (pointer:fine) and (max-width:819.98px),(hover:hover) and (pointer:fine) and (max-height:519.98px){.feednav{right:86px!important}}'+
-      /* подложка под роликом — постер; размыт как видео-подложка, а не на 2px, иначе читается резкой «заставкой» крупнее ролика */
-      '.photo.boxy:has(video.fg) .bg>img{filter:blur(30px) brightness(.82) saturate(1.2)!important}'+
-      '.slide .cap{transition:opacity .25s ease}body.swiping .slide .cap{opacity:0!important}'+
-      /* кнопки и таблетка — одно состояние: не гаснут при листании, стекло не пропадает */
-      /* контейнер не гасим (иначе стекло кнопок пропадает и впрыгивает третьим шагом) —
-         гаснет каждая кнопка сама: два состояния, стекло цело */
-      '#feedacts{transition:none!important}body.swiping #feedacts{opacity:1!important}'+
-      '#feedacts .rail button,#feedacts .acts button,.tabbar,#feedacts .rail button *,#feedacts .acts button *,.tabbar *{transition:none!important}'+
-      'body.swiping #feedacts .rail button,body.swiping #feedacts .acts button,body.swiping .tabbar{opacity:.34!important}';
+      /* ═══ ОПЫТ 14.09.2026: ЗАЛИТЬ ПОЛОСУ, КОТОРУЮ iOS НЕ ОТДАЛА ОКНУ ═══════
+         На трёх телефонах из четырёх iOS даёт иконке окно ровно на высоту часов
+         меньше экрана (956→894, 812→768), и снизу остаётся глухая чёрная полоса.
+         Ключ к ней — `100vh`: он на этих же телефонах равен ЭКРАНУ (956), а не
+         окну (894). Значит слой `100vh`, прибитый к верху окна, физически
+         накрывает полосу — проверяем именно это.
+
+         Геометрия ленты НЕ трогается: слой лежит ПОД всем (`z-index:-1`), высоту
+         карточки, снап и обвязку не меняет. Не сработает — пропадёт только
+         заливка, лента останется прежней. */
+      'html.xpwawin #xfill{position:fixed;left:0;right:0;top:0;height:100vh;z-index:-1;'+
+        'pointer-events:none;background:#0b0a09 center/cover no-repeat;'+
+        'background-image:var(--xfill-src,none);filter:blur(30px) brightness(.82) saturate(1.2);'+
+        'transform:scale(1.15)}'+
+      'html:not(.xpwawin) #xfill{display:none}';
     document.head.appendChild(st);
+    const fill=document.createElement('div'); fill.id='xfill';
+    document.body.insertBefore(fill, document.body.firstChild);
   }catch(e){}
   function hostIt(){
     const host=document.getElementById('feedchrome');
@@ -23818,7 +24115,12 @@ document.addEventListener('keydown',e=>{
   const yn=b=>b?'да':'НЕТ';
   function where(){
     const u=navigator.userAgent;
-    if(matchMedia('(display-mode:standalone)').matches||navigator.standalone) return 'иконка (PWA)';
+    /* `navigator.standalone` у ВСТРОЕННОГО Safari внутри приложения тоже true —
+       называть это «иконкой» значило бы врать в единственном месте, ради которого
+       плашка и заведена. Иконку от встроенного отличаем по обвязке вокруг
+       страницы: у иконки браузер забирает разве что часы, у встроенного — 218. */
+    const сам=matchMedia('(display-mode:standalone)').matches||navigator.standalone;
+    if(сам) return (screen.height-innerHeight)<=80 ? 'иконка (PWA)' : 'Safari внутри приложения';
     if(/WhatsApp/i.test(u)) return 'WhatsApp';
     if(/Telegram/i.test(u)) return 'Telegram';
     if(/Instagram/i.test(u)) return 'Instagram';
@@ -23864,10 +24166,11 @@ document.addEventListener('keydown',e=>{
         'slide h    '+sh+'\n'+
         'slide bot  '+sb+'\n'+
         'docscroll  '+d.classList.contains('docscroll')+'\n'+
+        'заливка    '+d.classList.contains('xpwawin')+'\n'+
         'coarse     '+matchMedia('(hover:none) and (pointer:coarse)').matches+'\n'+
         'standalone '+matchMedia('(display-mode:standalone)').matches+'\n'+
         '── браузер ──\n'+
-        'где        '+where()+(document.documentElement.classList.contains('xglass')?'  [под панели]':'  [в окно]')+'\n'+
+        'где        '+where()+(d.classList.contains('xglass')?'  [под панели]':'  [в окно]')+'\n'+
         'iOS        '+(((/OS (\d+)_(\d+)(?:_(\d+))?/.exec(navigator.userAgent)||[]).slice(1).filter(Boolean).join('.'))||'-')+'\n'+
         'Safari ver '+(((/Version\/([\d.]+)/.exec(navigator.userAgent))||[])[1]||'-')+'\n'+
         'DPR        '+devicePixelRatio+'  zoom '+R(vv.scale||1)+'\n'+
@@ -23901,13 +24204,28 @@ document.addEventListener('keydown',e=>{
       s.appendChild(d);
     });
   }
+  /* Заливка берёт кадр ТЕКУЩЕЙ карточки: под полосой должно быть продолжение
+     того, что человек видит, а не случайная картинка. */
+  function fillSrc(){
+    try{
+      const d=document.documentElement;
+      if(!d.classList.contains('xpwawin')) return;
+      const s=слайдПо(idx); if(!s) return;
+      const m=s.querySelector('video.fg[poster]')||s.querySelector('img.fg')||s.querySelector('.bg>img');
+      const u=m?(m.getAttribute('poster')||m.currentSrc||m.src):'';
+      if(!u) return;
+      const было=d.style.getPropertyValue('--xfill-src');
+      const надо='url("'+u+'")';
+      if(было!==надо) d.style.setProperty('--xfill-src',надо);
+    }catch(e){}
+  }
   function cur(){
     try{ const s=слайдПо(idx);
       document.querySelectorAll('.feed .slide.xcur').forEach(x=>{ if(x!==s) x.classList.remove('xcur'); });
       if(s&&!s.classList.contains('xcur')) s.classList.add('xcur'); }catch(e){}
   }
   /* плашка — 4 раза в секунду, не каждый кадр: не мешать листанию */
-  setInterval(()=>{draw();edges();cur();},250);
+  setInterval(()=>{draw();edges();cur();fillSrc();},250);
 })();
 </script>
 </body>
