@@ -157,6 +157,8 @@ DIAG = r'''
         'vv.offTop  '+R(vv.offsetTop||0)+'  pageTop '+R(vv.pageTop||0)+'\n'+
         'screen     '+screen.width+'×'+screen.height+'\n'+
         'забрал бр. '+(screen.height-innerHeight)+' (экран−окно: часы+панели)\n'+
+        'забрал lvh '+(screen.height-(window.__lvh||0))+'  (по нему и решаем)\n'+
+        'сборка     '+(window.__СБОРКА||'старая')+'\n'+
         'clientH    '+d.clientHeight+'\n'+
         'vh/svh     '+h('p-vh')+' / '+h('p-svh')+'\n'+
         'lvh/dvh    '+h('p-lvh')+' / '+h('p-dvh')+'\n'+
@@ -232,6 +234,9 @@ DIAG = r'''
 })();
 </script>
 '''
-html = html.replace('</body>', DIAG + '</body>') if '</body>' in html else html + DIAG
+import datetime
+МЕТКА = datetime.datetime.now().strftime('%H:%M:%S')
+html = html.replace('</body>', '<script>window.__СБОРКА=' + repr(МЕТКА) + ';</script>' + DIAG + '</body>') \
+    if '</body>' in html else html + DIAG
 open(OUT, 'w', encoding='utf-8').write(html)
 print('ok', len(html))

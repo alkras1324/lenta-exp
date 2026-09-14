@@ -24142,7 +24142,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-
+<script>window.__СБОРКА='19:23:45';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
@@ -24226,6 +24226,8 @@ document.addEventListener('keydown',e=>{
         'vv.offTop  '+R(vv.offsetTop||0)+'  pageTop '+R(vv.pageTop||0)+'\n'+
         'screen     '+screen.width+'×'+screen.height+'\n'+
         'забрал бр. '+(screen.height-innerHeight)+' (экран−окно: часы+панели)\n'+
+        'забрал lvh '+(screen.height-(window.__lvh||0))+'  (по нему и решаем)\n'+
+        'сборка     '+(window.__СБОРКА||'старая')+'\n'+
         'clientH    '+d.clientHeight+'\n'+
         'vh/svh     '+h('p-vh')+' / '+h('p-svh')+'\n'+
         'lvh/dvh    '+h('p-lvh')+' / '+h('p-dvh')+'\n'+
