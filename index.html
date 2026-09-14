@@ -4617,7 +4617,7 @@ const ДОКПРОКРУТКА = (function(){
      сама переменная объявляется ниже по файлу. */
   try{ if (matchMedia('(min-width:900px)').matches) return false; }catch(e){}
   /* Иконка — по старому пути; браузер на телефоне — документом. */
-  try{ return !matchMedia('(display-mode:standalone)').matches; }catch(e){ return false; }
+  try{ const u=navigator.userAgent, ver=+((/Version\/(\d+)/.exec(u)||[])[1]||0); return /iPhone|iPad/.test(u)&&/Safari/.test(u)&&ver>=26&&!/CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS|GSA|Telegram|Instagram|FBAN|FBAV|WhatsApp/.test(u)&&!(matchMedia('(display-mode:standalone)').matches||navigator.standalone)&&({956:1,932:1,874:1,852:1,926:1,844:1,896:1,812:1})[screen.height]===1&&(screen.height-innerHeight)<=175; }catch(e){ return false; }
 })();
 if (ДОКПРОКРУТКА) {
   try{ document.documentElement.classList.add('docscroll'); document.body.classList.add('docscroll'); }catch(e){}
@@ -23763,7 +23763,7 @@ document.addEventListener('keydown',e=>{
        экран из таблицы (известна высота часов), забрано ≤175 (встроенный Safari забирает 218).
        Иначе — классический: карточка = окно, тёмные шторки за краями окна. */
     const TT0={956:62,932:59,874:62,852:59,926:47,844:47,896:44,812:44}[screen.height];
-    const GL=GLASS&&TT0!=null;
+    const GL=document.documentElement.classList.contains('docscroll');
     if(GL) document.documentElement.classList.add('xglass');
     else ['top','bottom'].forEach(k=>{ const c=document.createElement('div');
       c.style.cssText='position:fixed;left:0;right:0;height:400px;z-index:40;pointer-events:none;background:#0b0a09;'+(k==='top'?'bottom:100%':'top:100%');
