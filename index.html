@@ -12620,7 +12620,7 @@ function подогнатьКадрирование(el){
     /* Слово за `.fg`: постер — его дубль, и если они разойдутся, кадрирование
        начнёт зависеть от того, что успело загрузиться первым. */
     if(!свои&&shot.__рамкаОтFg) return;
-    const рама=shot.clientWidth/shot.clientHeight; if(!рама||!isFinite(рама)) return;
+    const рама=shot.clientWidth/((ДОКПРОКРУТКА&&matchMedia("(hover:none) and (pointer:coarse)").matches)?Math.min(shot.clientHeight,innerHeight):shot.clientHeight); if(!рама||!isFinite(рама)) return;
     shot.__кадр=[w,h];                       // пригодится при повороте экрана
     if(свои) shot.__рамкаОтFg=true;
     применитьКадрирование(shot,w/h,рама,w);
@@ -12657,7 +12657,7 @@ addEventListener('resize',()=>{
     try{
       document.querySelectorAll('.photo').forEach(shot=>{
         const d=shot.__кадр; if(!d) return;
-        const рама=shot.clientWidth/shot.clientHeight; if(!рама||!isFinite(рама)) return;
+        const рама=shot.clientWidth/((ДОКПРОКРУТКА&&matchMedia("(hover:none) and (pointer:coarse)").matches)?Math.min(shot.clientHeight,innerHeight):shot.clientHeight); if(!рама||!isFinite(рама)) return;
         применитьКадрирование(shot,d[0]/d[1],рама,d[0]);
       });
     }catch(e){}
