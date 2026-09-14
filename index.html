@@ -23753,7 +23753,7 @@ document.addEventListener('keydown',e=>{
   try{
     const st=document.createElement('style');
     st.textContent='.feed .slide,html.docscroll .slide{height:'+screen.height+'px!important}'+
-      ':root{--окно-добор:0px!important;--cap-добор:0px!important}'+
+      ':root{--окно-добор:calc('+screen.height+'px - 100dvh)!important;--cap-добор:0px!important}'+
       '.slide .cap{transition:opacity .25s ease}body.swiping .slide .cap{opacity:0!important}';
     document.head.appendChild(st);
   }catch(e){}
