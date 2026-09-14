@@ -22758,6 +22758,28 @@ setTimeout(()=>{const s=слайдПо(окноОт);if(s&&s._capShow)s._capShow
    Отдельный таймер, а не событие scrollend: в Safari его нет, а лента живёт
    в основном там. */
 let swipeT=0, swipeDeadline=0, swipeС=0;
+/* ═══ СТОРОЖ ПРИЗНАКА «ЛЕНТА ЕДЕТ» ══════════════════════════════════════════
+   Владелец 15.09.2026: «контролы залипли». Третий заход по этой беде за вечер, и
+   первые два лечили следствия.
+
+   Признак снимается таймером от ПОСЛЕДНЕГО события прокрутки. Это неверно в
+   основании: событий может идти поток (их шлёт и сама страница — при
+   инициализации, при доводке позиции, при схлопывании панелей Safari), и тогда
+   таймер не наступает никогда. Крайний срок в 1,2 с помогал не всегда: его ставит
+   только первое добавление класса, а поток событий заводит его заново.
+
+   Сторож смотрит не на события, а на ФАКТ: если позиция ленты не менялась
+   четверть секунды — лента стоит, чем бы браузер ни сыпал. Это единственная
+   проверка, которую нельзя обмануть лишним событием. */
+let сторожПоз=-1;
+setInterval(()=>{
+  try{
+    if(!document.body.classList.contains('swiping')) { сторожПоз=-1; return; }
+    const п=ПРОКРУТЧИК ? ПРОКРУТЧИК.scrollTop : 0;
+    if(сторожПоз===п){ document.body.classList.remove('swiping'); сторожПоз=-1; }
+    else сторожПоз=п;
+  }catch(e){}
+}, 250);
 function swipeMark(){
   /* Событие от НАШЕЙ ЖЕ досылки жестом не считаем (см. `переложитьНаСлайд`). */
   if(Date.now()-ДОСЫЛКА<120) return;
@@ -24318,7 +24340,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='21:51:56';</script>
+<script>window.__СБОРКА='22:00:47';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
