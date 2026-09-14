@@ -23811,6 +23811,7 @@ document.addEventListener('keydown',e=>{
         'касания    '+(navigator.maxTouchPoints||0)+'  язык '+navigator.language+'\n'+
         'viewport   '+(((document.querySelector('meta[name=viewport]')||{}).content)||'-').replace(/\s+/g,'')+'\n'+
         'UA '+navigator.userAgent.replace(/Mozilla\/5\.0 /,'');
+      el.textContent=el.textContent.split('\n').map(l=>(l.match(/.{1,46}/g)||['']).join('\n   ')).join('\n');
     }catch(e){ el.textContent='diag err '+e; }
   }
   function edges(){
