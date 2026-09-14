@@ -23726,8 +23726,8 @@ document.addEventListener('keydown',e=>{
 </script>
 
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
- background:rgba(0,0,0,.72);color:#0f0;font:11px/1.35 ui-monospace,Menlo,monospace;
- padding:6px 8px;border-radius:8px;white-space:pre;max-width:92vw"></div>
+ background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
+ padding:4px 6px;border-radius:6px;white-space:pre;max-width:70vw;overflow:hidden"></div>
 <div id="xprobe" style="position:absolute;left:-9999px;top:0;visibility:hidden">
  <div id="p-vh" style="height:100vh"></div><div id="p-svh" style="height:100svh"></div>
  <div id="p-lvh" style="height:100lvh"></div><div id="p-dvh" style="height:100dvh"></div>
@@ -23744,6 +23744,23 @@ document.addEventListener('keydown',e=>{
   hostIt(); setInterval(hostIt,1000);
   const h=id=>{const e=document.getElementById(id);return e?Math.round(e.getBoundingClientRect().height):'?';};
   const R=v=>Math.round(v*10)/10;
+  const yn=b=>b?'да':'НЕТ';
+  function where(){
+    const u=navigator.userAgent;
+    if(matchMedia('(display-mode:standalone)').matches||navigator.standalone) return 'иконка (PWA)';
+    if(/WhatsApp/i.test(u)) return 'WhatsApp';
+    if(/Telegram/i.test(u)) return 'Telegram';
+    if(/Instagram/i.test(u)) return 'Instagram';
+    if(/FBAN|FBAV/i.test(u)) return 'Facebook';
+    if(/YaBrowser/i.test(u)) return 'Яндекс.Браузер';
+    if(/CriOS/i.test(u)) return 'Chrome iOS';
+    if(/FxiOS/i.test(u)) return 'Firefox iOS';
+    if(/EdgiOS/i.test(u)) return 'Edge iOS';
+    if(/iPhone|iPad/.test(u)&&/Safari/.test(u)&&/Version\//.test(u)) return 'Safari';
+    if(/iPhone|iPad/.test(u)) return 'встроенный (WebView)';
+    if(/Chrome/.test(u)) return 'Chrome';
+    return 'другое';
+  }
   function draw(){
     try{
       const vv=window.visualViewport||{};
@@ -23756,6 +23773,7 @@ document.addEventListener('keydown',e=>{
         'visualVP   '+R(vv.width||0)+'×'+R(vv.height||0)+'\n'+
         'vv.offTop  '+R(vv.offsetTop||0)+'  pageTop '+R(vv.pageTop||0)+'\n'+
         'screen     '+screen.width+'×'+screen.height+'\n'+
+        'забрал бр. '+(screen.height-innerHeight)+' (экран−окно: часы+панели)\n'+
         'clientH    '+d.clientHeight+'\n'+
         'vh/svh     '+h('p-vh')+' / '+h('p-svh')+'\n'+
         'lvh/dvh    '+h('p-lvh')+' / '+h('p-dvh')+'\n'+
@@ -23768,7 +23786,26 @@ document.addEventListener('keydown',e=>{
         'slide bot  '+sb+'\n'+
         'docscroll  '+d.classList.contains('docscroll')+'\n'+
         'coarse     '+matchMedia('(hover:none) and (pointer:coarse)').matches+'\n'+
-        'standalone '+matchMedia('(display-mode:standalone)').matches;
+        'standalone '+matchMedia('(display-mode:standalone)').matches+'\n'+
+        '── браузер ──\n'+
+        'где        '+where()+'\n'+
+        'iOS        '+(((/OS (\d+)_(\d+)(?:_(\d+))?/.exec(navigator.userAgent)||[]).slice(1).filter(Boolean).join('.'))||'-')+'\n'+
+        'Safari ver '+(((/Version\/([\d.]+)/.exec(navigator.userAgent))||[])[1]||'-')+'\n'+
+        'DPR        '+devicePixelRatio+'  zoom '+R(vv.scale||1)+'\n'+
+        'ориент.    '+((screen.orientation&&screen.orientation.type)||(innerWidth>innerHeight?'land':'port'))+'\n'+
+        'тир        '+((typeof TIER!=='undefined')?TIER:'-')+'\n'+
+        'ядра/пам   '+(navigator.hardwareConcurrency||'-')+' / '+(navigator.deviceMemory||'-')+'\n'+
+        'сеть       '+(((navigator.connection||{}).effectiveType)||'-')+(((navigator.connection||{}).saveData)?' saveData':'')+'\n'+
+        'движение   '+(matchMedia('(prefers-reduced-motion:reduce)').matches?'УМЕНЬШ.':'обычн.')+
+          '  тема '+(matchMedia('(prefers-color-scheme:dark)').matches?'тёмн':'светл')+'\n'+
+        'контраст   '+(matchMedia('(prefers-contrast:more)').matches?'повыш':'обычн')+
+          '  прозр '+(matchMedia('(prefers-reduced-transparency:reduce)').matches?'УМЕНЬШ':'обычн')+'\n'+
+        'умеет      dvh:'+yn(CSS.supports('height','100dvh'))+' snap:'+yn(CSS.supports('scroll-snap-type','y mandatory'))+
+          ' blur:'+yn(CSS.supports('backdrop-filter','blur(1px)')||CSS.supports('-webkit-backdrop-filter','blur(1px)'))+
+          ' cv:'+yn(CSS.supports('content-visibility','auto'))+'\n'+
+        'касания    '+(navigator.maxTouchPoints||0)+'  язык '+navigator.language+'\n'+
+        'viewport   '+(((document.querySelector('meta[name=viewport]')||{}).content)||'-').replace(/\s+/g,'')+'\n'+
+        'UA '+navigator.userAgent.replace(/Mozilla\/5\.0 /,'').slice(0,110);
     }catch(e){ el.textContent='diag err '+e; }
   }
   function edges(){
