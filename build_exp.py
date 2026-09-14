@@ -56,6 +56,10 @@ DIAG = r'''
     const GLASS=/iPhone|iPad/.test(u)&&/Safari/.test(u)&&ver>=26&&!/CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS|GSA|Telegram|Instagram|FBAN|FBAV|WhatsApp/.test(u)
       &&!(matchMedia('(display-mode:standalone)').matches||navigator.standalone);
     if(GLASS) document.documentElement.classList.add('xglass');
+    const u=navigator.userAgent, ver=+((/Version\/(\d+)/.exec(u)||[])[1]||0);
+    const GLASS=/iPhone|iPad/.test(u)&&/Safari/.test(u)&&ver>=26&&!/CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS|GSA|Telegram|Instagram|FBAN|FBAV|WhatsApp/.test(u)
+      &&!(matchMedia('(display-mode:standalone)').matches||navigator.standalone);
+    if(GLASS) document.documentElement.classList.add('xglass');
     const H=screen.height+'px', E='('+H+' - 100dvh)';
     /* высота часов (верхняя зона): Safari её не сообщает — по таблице экранов iPhone */
     const TT={956:62,932:59,874:62,852:59,926:47,844:47,896:44,812:44,667:20,736:20}[screen.height];
@@ -71,7 +75,7 @@ DIAG = r'''
       /* подпись поднимается на запас, чтобы стоять над «Купить» */
       'html.docscroll.xglass{--окно-добор:calc'+E+'!important}'+
       /* подпись прибита к кнопкам, а не к картинке: стоит на месте, при листании только гаснет */
-      'html.docscroll .slide:not(.hero) .cap{position:fixed!important;top:auto!important;bottom:0!important;--окно-добор:0px!important}'+
+      'html.docscroll.xglass .slide:not(.hero) .cap{--окно-добор:calc('+H+' - '+T+' - 100dvh)!important}'+
       'html.docscroll .slide:not(.xcur) .cap{opacity:0!important;visibility:hidden!important}}'+
       ':root{--cap-добор:0px!important}'+
       '.slide .cap{transition:opacity .25s ease}body.swiping .slide .cap{opacity:0!important}'+
