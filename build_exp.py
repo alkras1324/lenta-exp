@@ -38,6 +38,9 @@ DOC_NEW = ("  try{ const u=navigator.userAgent, ver=+((/Version\\/(\\d+)/.exec(u
            "&&({956:1,932:1,874:1,852:1,926:1,844:1,896:1,812:1})[screen.height]===1"
            "&&(screen.height-innerHeight)<=175; }catch(e){ return false; }\n})();")
 assert html.count(DOC_OLD) == 1, 'doc'; html = html.replace(DOC_OLD, DOC_NEW)
+# на github.io страница живёт в /lenta-exp/: без этого manifest.json ищется в корне сайта (404),
+# и иконка на домашнем экране открывается по старому пути — окно 894, без зоны часов
+assert html.count('<base href="/">') >= 1; html = html.replace('<base href="/">', '<base href="/lenta-exp/">', 1)
 assert '/*__DATA__*/{}' in html and '<script src="data.js"></script>' in html
 html = html.replace('/*__DATA__*/{}', json.dumps({'bouquets': bq}, ensure_ascii=False))
 html = html.replace('<script src="data.js"></script>', '')
