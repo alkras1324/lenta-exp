@@ -4745,8 +4745,7 @@ const ДОКПРОКРУТКА = (function(){
          замера оно не зависит: 836 при экране 956, то есть забрано 120. У
          встроенного Safari внутри приложения складывать нечего, `lvh` равен окну,
          и забрано те же ~218 — режимы по-прежнему разделяются с запасом. */
-      && (screen.height - ОКНОБЕЗПАНЕЛЕЙ()) <= 175
-      && ((window.__lvh||0)>screen.height*0.66 && (window.__lvh||0)<=screen.height);   /* опыт: lvh должен быть похож на правду */
+      && (screen.height - ОКНОБЕЗПАНЕЛЕЙ()) <= 175;
   }catch(e){ return false; }
 })();
 /* Меряем один раз и запоминаем: значение по определению постоянное, а создание
@@ -4796,7 +4795,7 @@ if (ДОКПРОКРУТКА) {
     const ЧАСЫ={956:62,932:59,874:62,852:59,926:47,844:47,896:44,812:44,667:20,736:20};
     if (корень.classList.contains('docscroll')) {
       корень.classList.add('xglass');
-      корень.style.setProperty('--xscr', (ОКНОБЕЗПАНЕЛЕЙ()+(ЧАСЫ[screen.height]||0))+'px');
+      корень.style.setProperty('--xscr', screen.height+'px');
       /* ПОДЪЁМ КАРТОЧКИ — НЕ ВЫСОТА ЧАСОВ, А ЗАБРАННОЕ МИНУС ЧАСЫ. Первая редакция
          поднимала карточку ровно на высоту часов, и владелец поймал промах глазом
          («наверху не до конца дотянуться», 14.09.2026). Разбор по числам с его
@@ -4814,7 +4813,7 @@ if (ДОКПРОКРУТКА) {
                   :Math.round((screen.height-ОКНОБЕЗПАНЕЛЕЙ())*0.4));
       const подъём=()=>{ try{
         const окно=(window.visualViewport&&window.visualViewport.height)||innerHeight;
-        const T=часы;   /* карточка уже ростом lvh+часы: поднять её надо ровно на часы */
+        const T=часы;   /* опыт: подъём = высота часов, как в сборке 19:32:56 */
         if(window.__xT!==T){ window.__xT=T; корень.style.setProperty('--xT', T+'px'); }
       }catch(e){} };
       подъём();
@@ -24224,7 +24223,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='21:28:43';</script>
+<script>window.__СБОРКА='21:30:43';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
