@@ -62,26 +62,6 @@ DIAG = r'''
     else ['top','bottom'].forEach(k=>{ const c=document.createElement('div');
       c.style.cssText='position:fixed;left:0;right:0;height:400px;z-index:40;pointer-events:none;background:#0b0a09;'+(k==='top'?'bottom:100%':'top:100%');
       document.body.appendChild(c); });
-    const u=navigator.userAgent, ver=+((/Version\/(\d+)/.exec(u)||[])[1]||0);
-    const GLASS=/iPhone|iPad/.test(u)&&/Safari/.test(u)&&ver>=26&&!/CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS|GSA|Telegram|Instagram|FBAN|FBAV|WhatsApp/.test(u)
-      &&!(matchMedia('(display-mode:standalone)').matches||navigator.standalone)
-      /* Safari внутри приложения представляется как полный, но верх у него глухой и забирает больше: 218 против 120–160 */
-      &&(screen.height-innerHeight)<=175;
-    /* одно поведение для всех браузеров: карточка = окно; рецепт «под панели» выключен */
-    /* за краями окна — тёмные шторки: под прозрачной панелью закрывают соседей, под глухой не видны */
-    ['top','bottom'].forEach(k=>{ const c=document.createElement('div');
-      c.style.cssText='position:fixed;left:0;right:0;height:400px;z-index:40;pointer-events:none;background:#0b0a09;'+(k==='top'?'bottom:100%':'top:100%');
-      document.body.appendChild(c); });
-    const u=navigator.userAgent, ver=+((/Version\/(\d+)/.exec(u)||[])[1]||0);
-    const GLASS=/iPhone|iPad/.test(u)&&/Safari/.test(u)&&ver>=26&&!/CriOS|FxiOS|EdgiOS|YaBrowser|OPiOS|GSA|Telegram|Instagram|FBAN|FBAV|WhatsApp/.test(u)
-      &&!(matchMedia('(display-mode:standalone)').matches||navigator.standalone)
-      /* Safari внутри приложения представляется как полный, но верх у него глухой и забирает больше: 218 против 120–160 */
-      &&(screen.height-innerHeight)<=175;
-    /* одно поведение для всех браузеров: карточка = окно; рецепт «под панели» выключен */
-    /* за краями окна — тёмные шторки: под прозрачной панелью закрывают соседей, под глухой не видны */
-    ['top','bottom'].forEach(k=>{ const c=document.createElement('div');
-      c.style.cssText='position:fixed;left:0;right:0;height:400px;z-index:40;pointer-events:none;background:#0b0a09;'+(k==='top'?'bottom:100%':'top:100%');
-      document.body.appendChild(c); });
     const H=screen.height+'px', E='('+H+' - 100dvh)';
     /* высота часов (верхняя зона): Safari её не сообщает — по таблице экранов iPhone */
     const TT={956:62,932:59,874:62,852:59,926:47,844:47,896:44,812:44,667:20,736:20}[screen.height];
