@@ -53,7 +53,10 @@ DIAG = r'''
       /* снап останавливает по видимой середине: отрицательные поля на запас */
       'scroll-margin-top:calc(-1 * '+E+')!important;scroll-margin-bottom:calc(-1 * '+E+')!important}'+
       /* подпись поднимается на запас, чтобы стоять над «Купить» */
-      'html.docscroll{--окно-добор:calc'+E+'!important}}'+
+      'html.docscroll{--окно-добор:calc'+E+'!important}'+
+      /* подпись прибита к кнопкам, а не к картинке: стоит на месте, при листании только гаснет */
+      'html.docscroll .slide:not(.hero) .cap{position:fixed!important;top:auto!important;bottom:0!important;--окно-добор:0px!important}'+
+      'html.docscroll .slide:not(.xcur) .cap{opacity:0!important;visibility:hidden!important}}'+
       ':root{--cap-добор:0px!important}'+
       '.slide .cap{transition:opacity .25s ease}body.swiping .slide .cap{opacity:0!important}'+
       /* кнопки и таблетка — одно состояние: не гаснут при листании, стекло не пропадает */
@@ -158,7 +161,12 @@ DIAG = r'''
       s.appendChild(d);
     });
   }
-  const tick=()=>{draw();edges();requestAnimationFrame(tick);};
+  function cur(){
+    try{ const s=слайдПо(idx);
+      document.querySelectorAll('.feed .slide.xcur').forEach(x=>{ if(x!==s) x.classList.remove('xcur'); });
+      if(s&&!s.classList.contains('xcur')) s.classList.add('xcur'); }catch(e){}
+  }
+  const tick=()=>{draw();edges();cur();requestAnimationFrame(tick);};
   requestAnimationFrame(tick);
 })();
 </script>
