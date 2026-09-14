@@ -68,6 +68,12 @@ DIAG = r'''
     /* ДВА РЕЖИМА. Стеклянный — только при полной уверенности: вкладка полного Safari 26+,
        экран из таблицы (известна высота часов), забрано ≤175 (встроенный Safari забирает 218).
        Иначе — классический: карточка = окно, тёмные шторки за краями окна. */
+    /* PWA: если iOS дал окно меньше экрана (894 из 956 — полоса часов глухая), карточка = окно, иначе низ с кнопками уезжает за экран */
+    const pwaFix=()=>{ try{ const d=document.documentElement;
+      const sa=matchMedia('(display-mode:standalone)').matches||navigator.standalone;
+      const short=sa&&innerHeight<screen.height-1;
+      d.classList.toggle('xpwawin',short); if(short) d.style.setProperty('--xwin',innerHeight+'px'); }catch(e){} };
+    pwaFix(); addEventListener('resize',pwaFix);
     const TT0={956:62,932:59,874:62,852:59,926:47,844:47,896:44,812:44}[screen.height];
     const GL=document.documentElement.classList.contains('docscroll');
     if(GL) document.documentElement.classList.add('xglass');
@@ -92,6 +98,7 @@ DIAG = r'''
       'html.docscroll.xglass .slide:not(.hero) .cap{--окно-добор:calc('+H+' - '+T+' - 100dvh)!important}'+
       'html.docscroll .slide:not(.xcur) .cap{opacity:0!important;visibility:hidden!important}}'+
       'html.xglass{--cap-добор:0px!important}'+
+      'html.xpwawin,html.xpwawin body{height:var(--xwin)!important}html.xpwawin .feed{height:var(--xwin)!important}html.xpwawin .slide{height:var(--xwin)!important}'+
       /* узкое окно ПК: стрелки листания левее рельса, а не на нём */
       '@media (hover:hover) and (pointer:fine) and (max-width:819.98px),(hover:hover) and (pointer:fine) and (max-height:519.98px){.feednav{right:86px!important}}'+
       /* подложка под роликом — постер; размыт как видео-подложка, а не на 2px, иначе читается резкой «заставкой» крупнее ролика */
