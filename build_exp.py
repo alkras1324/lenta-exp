@@ -69,29 +69,6 @@ assert 'apple-mobile-web-app-status-bar-style' in html, 'в шаблоне не�
 # трёх браузерах. Цена известна и мала: во вкладке при «Увеличено» часы берутся 44
 # вместо ~58, карточка уезжает под них на полтора десятка точек меньше.
 
-# ═══ ОПЫТ 14.09.2026, 23:20 — КАДР НА ВЕСЬ ЭКРАН, ОБВЯЗКА ПО ОКНУ ═══════════
-# Мысль владельца: «почему не сделать картинку на весь экран, а наши тулзы рисовать
-# во вьюпорте, каким бы он ни был». Она снимает всю вечернюю возню разом.
-#
-# Вечер ушёл на попытки поставить КАРТОЧКУ ростом в экран так, чтобы её не резало
-# ни сверху, ни снизу. Это неразрешимо: сколько браузер забрал СВЕРХУ, а сколько
-# СНИЗУ, из JS узнать нечем — `visualViewport.offsetTop` ноль, `safe-area-inset-top`
-# во вкладке тоже ноль. Последний замер: забрано 214, подъём посчитан 152, и низ
-# карточки честно не дотянул до низа экрана («внизу недотянуто»).
-#
-# Поэтому меняем не подгонку, а устройство:
-#   1. лента КЛАССИЧЕСКАЯ — карточка равна окну. Снап ровный, швов между карточками
-#      нет никогда, при любых панелях. Стеклянный режим выключен целиком;
-#   2. кадр ТЕКУЩЕЙ карточки на остановке становится фиксированным во весь экран
-#      (`100vh`). Это ТОТ ЖЕ элемент, а не копия, — значит ролик не перезапускается
-#      и не дублируется;
-#   3. кнопки, подписи и таблетка остаются по видимому окну, как и были.
-# Во время листания кадр возвращается в карточку и едет вместе с ней.
-ПОЛНЫЙ_OLD = """    return /iPhone|iPad/.test(u) && /Safari/.test(u) && ver>=26"""
-assert html.count(ПОЛНЫЙ_OLD) == 1, 'условие режима'
-html = html.replace(ПОЛНЫЙ_OLD, """    if (1) return false;   /* опыт: стеклянный режим выключен, лента классическая */
-    return /iPhone|iPad/.test(u) && /Safari/.test(u) && ver>=26""")
-
 assert '/*__DATA__*/{}' in html and '<script src="data.js"></script>' in html
 html = html.replace('/*__DATA__*/{}', json.dumps({'bouquets': bq}, ensure_ascii=False))
 html = html.replace('<script src="data.js"></script>', '')
@@ -125,46 +102,10 @@ DIAG = r'''
         'pointer-events:none;background:#0b0a09 center/cover no-repeat;'+
         'background-image:var(--xfill-src,none);filter:blur(30px) brightness(.82) saturate(1.2);'+
         'transform:scale(1.15)}'+
-      'html:not(.xpwawin) #xfill{display:none}'+
-      /* ═══ КАДР НА ВЕСЬ ЭКРАН, ОБВЯЗКА ПО ОКНУ (опыт 14.09.2026, 23:20) ══════
-         Пока лента стоит, кадр ТЕКУЩЕЙ карточки вырывается из неё и занимает весь
-         экран: `position:fixed` + `100vh`. Это тот же самый элемент — ролик не
-         перезапускается, второй копии нет.
-
-         Во время листания (`body.swiping`) правило снимается, кадр возвращается в
-         карточку и едет вместе с ней. Переключение приходится ровно на момент,
-         когда и без того всё меняется: контролы гаснут в ноль, подписи уходят.
-
-         Обвязку не трогаем вовсе — кнопки, подпись и таблетка остаются по видимому
-         окну, что бы браузер ни забрал сверху и снизу. */
-      '@media (hover:none) and (pointer:coarse){'+
-      /* СНИМАЕМ CONTAINMENT С ТЕКУЩЕЙ КАРТОЧКИ, ИНАЧЕ `fixed` НЕ ВЫХОДИТ ЗА НЕЁ.
-         У `.slide` стоит `content-visibility:auto` — это paint-containment, и
-         фиксированный потомок привязывается к самой карточке, а не к экрану. */
-      'body:not(.swiping) .feed .slide.xcur{content-visibility:visible!important;'+
-        'contain:none!important;overflow:visible!important}'+
-      /* ФИКСИРУЕМ ОБЁРТКУ КАДРОВ, А НЕ КАЖДЫЙ КАДР. Первый заход брал `.photo` —
-         а их у карточки несколько (ролик и фотографии для листания вбок), и все
-         они разом встали фиксированными друг поверх друга: владелец увидел месиво
-         из двух карточек сразу. Обёртка `.photos` одна на карточку, и
-         горизонтальное листание внутри неё продолжает работать. */
-      /* ПОДНИМАЕМ КАДР НАД КРОМКОЙ ОКНА НА ВСЁ ЗАБРАННОЕ. `position:fixed` считает
-         `top:0` от ВИЗУАЛЬНОГО вьюпорта, то есть уже ниже часов и адресной строки,
-         и сам по себе вверх не уходит. Отрицательный отступ проверяет прямо: рисует
-         Safari за верхней кромкой окна или обрезает. Высота — `100vh` (956). */
-      'body:not(.swiping) .feed .slide.xcur .photos{position:fixed!important;left:0!important;'+
-        'right:0!important;top:calc(-1 * var(--xup,0px))!important;bottom:auto!important;'+
-        'width:100%!important;height:100vh!important;z-index:0!important}}';
+      'html:not(.xpwawin) #xfill{display:none}';
     document.head.appendChild(st);
     const fill=document.createElement('div'); fill.id='xfill';
     document.body.insertBefore(fill, document.body.firstChild);
-    const подъём=()=>{ try{
-      const окно=(window.visualViewport&&window.visualViewport.height)||innerHeight;
-      document.documentElement.style.setProperty('--xup', Math.max(0, Math.round(screen.height-окно))+'px');
-    }catch(e){} };
-    подъём(); addEventListener('resize',подъём);
-    try{ if(window.visualViewport){ window.visualViewport.addEventListener('resize',подъём,{passive:true});
-      window.visualViewport.addEventListener('scroll',подъём,{passive:true}); } }catch(e){}
   }catch(e){}
   function hostIt(){
     const host=document.getElementById('feedchrome');
