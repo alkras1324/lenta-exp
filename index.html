@@ -2154,7 +2154,22 @@
      нет: два состояния значит два, без промежуточных кадров. */
   #feedacts{transition:none;}
   body.swiping #feedacts{opacity:1;}
-  #feedacts .rail button,#feedacts .acts button,.tabbar,
+  /* ПОЯВЛЕНИЕ — С КОРОТКИМ ПЕРЕХОДОМ, ИСЧЕЗНОВЕНИЕ — МГНОВЕННОЕ
+     (владелец 15.09.2026: «отладь мигание тулбаров»).
+
+     Когда гасили до трети, резкое переключение читалось как смена яркости. С
+     нулём оно читается как МИГАНИЕ: кнопки то исчезают, то возвращаются целиком,
+     и любое дрожание признака «лента едет» видно как вспышка.
+
+     Лечится несимметрично, и это осознанно: гаснуть надо мгновенно — иначе кадр
+     на старте жеста остаётся заслонён уезжающими кнопками; появляться — за .18 с,
+     потому что именно появление глаз читает как мигание. Переход живёт на самой
+     кнопке, а не на контейнере: у контейнера с `opacity<1` пропадает стекло
+     кнопок (см. разбор трёх состояний выше). */
+  #feedacts .rail button,#feedacts .acts button,.tabbar{transition:opacity .18s ease;}
+  body.swiping #feedacts .rail button,
+  body.swiping #feedacts .acts button,
+  body.swiping .tabbar{transition:none;}
   #feedacts .rail button *,#feedacts .acts button *,.tabbar *{transition:none;}
   /* ГАСИМ В НОЛЬ, А НЕ В ТРЕТЬ (владелец 14.09.2026: «контролы могут исчезнуть
      совсем, не просто стать полупрозрачными, если надо»). Полупрозрачная кнопка
@@ -6828,7 +6843,7 @@ function liveShots(slide){
   const sh=slide&&currentShot(slide);
   return sh?[sh]:[];
 }
-let ПРОШЛАЯПОЗ=0, ОСЕСТЬ=null;
+let ПРОШЛАЯПОЗ=0, ОСЕСТЬ=null, ВЕРНУТЬ=null;
 let ЛЕНТАЕДЕТ=false;
 /* Задержка «отмирания» в миллисекундах — от остановки ленты до первого
    двинувшегося кадра. Читается в замерах и в самопрогоне. */
@@ -7366,8 +7381,17 @@ function встали(насильно){
   try{ переложитьНаСлайд(); }catch(e){}
   /* Надписи возвращаются ПО ФАКТУ ОСТАНОВКИ, а не по таймеру в 420 мс: лента уже
      стоит, ждать нечего. Таймер остаётся страховкой на случай, когда `встали` не
-     позвали вовсе. */
-  try{ document.body.classList.remove('swiping'); }catch(e){}
+     позвали вовсе.
+
+     НО НЕ В ТОТ ЖЕ МИГ, А ЧЕРЕЗ 90 мс, И ЭТО ПРОТИВ МИГАНИЯ (владелец 15.09.2026:
+     «отладь мигание тулбаров»). `встали` зовётся и посреди инерции — лента на миг
+     замирает у границы кадра, и тут же едет дальше. Мгновенное снятие показывало
+     кнопки на один кадр и прятало обратно: с нулевой прозрачностью это вспышка.
+     Задержка гасится новой прокруткой (`swipeMark` её отменяет), поэтому для
+     настоящей остановки ничего не меняется, а дрожание не проходит. */
+  try{ clearTimeout(ВЕРНУТЬ); ВЕРНУТЬ=setTimeout(()=>{
+    try{ if(!ЛЕНТАЕДЕТ) document.body.classList.remove('swiping'); }catch(e){}
+  },90); }catch(e){}
   /* Куда человек едет и как быстро — из этого считается вся лестница подкачки. */
   if(typeof ПРОШЛАЯПОЗ==='number'&&idx!==ПРОШЛАЯПОЗ) НАПРАВЛЕНИЕ=(idx>ПРОШЛАЯПОЗ)?1:-1;
   ПОСЛЕДНЯЯОСТАНОВКА=Date.now();
@@ -22691,6 +22715,9 @@ setTimeout(()=>{const s=слайдПо(окноОт);if(s&&s._capShow)s._capShow
    в основном там. */
 let swipeT=0, swipeDeadline=0, swipeС=0;
 function swipeMark(){
+  /* Поехали снова — отложенный возврат надписей отменяем: иначе он сработает уже
+     посреди нового жеста и даст ту самую вспышку. */
+  try{ clearTimeout(ВЕРНУТЬ); }catch(e){}
   if(!document.body.classList.contains('swiping')){
     document.body.classList.add('swiping');
     swipeС=Date.now();
@@ -24245,7 +24272,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='21:39:31';</script>
+<script>window.__СБОРКА='21:43:25';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
