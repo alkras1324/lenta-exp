@@ -4983,7 +4983,13 @@ if (ДОКПРОКРУТКА) {
         з.style.cssText='position:fixed;top:0;left:0;width:0;visibility:hidden;height:env(safe-area-inset-top,0px)';
         (document.body||корень).appendChild(з); верх=з.offsetHeight; з.remove(); }catch(e){}
       корень.classList.toggle('xpwadown', !!(мало && верх>0));
-      if(мало) корень.style.setProperty('--xwin', innerHeight+'px');
+      /* ПОЛОСА СНИЗУ — НЕ ПОЛОСА, А ВРУЩИЙ `innerHeight` (BrowserStack, iPhone 13
+         Pro Max, iOS 18.3, 15.09.2026). На одном телефоне в одной сессии окно было
+         879 в ленте и 926 в плитке, а каталог 0…926 и таблетка 854…906 в плитке
+         видны на экране — нижние 47 точек наши. Полосу рисовала сама страховка:
+         прибивала страницу к 879, ниже оставался тёмный слой. Поэтому у окна под
+         часами высота страницы — экран (в точках страницы), а не `innerHeight`. */
+      if(мало) корень.style.setProperty('--xwin', ((мало && верх>0) ? ЭКРАНВЫС() : innerHeight)+'px');
       else корень.style.removeProperty('--xwin');
     }catch(e){} };
     pwaFix();
@@ -24487,7 +24493,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='17:05:31';</script>
+<script>window.__СБОРКА='17:23:00';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
