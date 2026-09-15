@@ -269,6 +269,7 @@ DIAG = r'''
         'visualVP   '+R(vv.width||0)+'×'+R(vv.height||0)+'\n'+
         'vv.offTop  '+R(vv.offsetTop||0)+'  pageTop '+R(vv.pageTop||0)+'\n'+
         'screen     '+screen.width+'×'+screen.height+'\n'+
+        'масштаб    '+(Math.round(Math.min(screen.width,screen.height)/Math.min(innerWidth,innerHeight)*100))+'%  экран стр. '+(typeof ЭКРАНВЫС==='function'?ЭКРАНВЫС():'—')+'\n'+
         'забрал бр. '+(screen.height-innerHeight)+' (экран−окно: часы+панели)\n'+
         'забрал lvh '+(screen.height-(window.__lvh||0))+'  (по нему и решаем)\n'+
         'сборка     '+(window.__СБОРКА||'старая')+'\n'+

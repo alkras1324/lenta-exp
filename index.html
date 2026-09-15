@@ -4862,6 +4862,22 @@ const ДОКПРОКРУТКА = (function(){
       && ОКНОБЕЗПАНЕЛЕЙ() < screen.height - 1;
   }catch(e){ return false; }
 })();
+/* ВЫСОТА ЭКРАНА В ТОЧКАХ СТРАНИЦЫ, А НЕ УСТРОЙСТВА (владелец 16.09.2026: «размеры
+   экрана отдаются другими»). Масштаб страницы в Safari («аА», Настройки → Safari →
+   Масштаб) растит точки страницы, а `screen` оставляет в точках устройства: при
+   125% окно 428 становится 342, экран остаётся 428×926 — и сравнение «экран минус
+   окно» видит лишнюю полосу, которой нет. У нас `width=device-width`, поэтому без
+   масштаба ширина окна равна ширине экрана, и их отношение и есть масштаб. */
+function ЭКРАНВЫС(){
+  try{
+    const ш=Math.min(screen.width,screen.height), в=Math.max(screen.width,screen.height);
+    const стоя=innerHeight>=innerWidth;
+    const окноШ=стоя?innerWidth:innerHeight;          // сторона окна вдоль короткой стороны экрана
+    const к=(окноШ>0)?ш/окноШ:1;
+    const экран=стоя?в:ш;
+    return Math.abs(к-1)<0.02 ? экран : Math.round(экран/к);
+  }catch(e){ return (screen&&screen.height)||0; }
+}
 /* Меряем один раз и запоминаем: значение по определению постоянное, а создание
    пробного элемента на каждый вопрос — лишняя перерисовка. */
 function ОКНОБЕЗПАНЕЛЕЙ(){
@@ -4955,7 +4971,7 @@ if (ДОКПРОКРУТКА) {
          второй аргумент считается непереданным. Класс мигал на каждом вызове и
          оставался включённым при нечётном их числе — лента схлопывалась там, где
          страховке делать нечего (прогон `browser_window_check`, 14.09.2026). */
-      const мало=!!(сам && !корень.classList.contains('docscroll') && innerHeight<screen.height-1);
+      const мало=!!(сам && !корень.classList.contains('docscroll') && innerHeight<ЭКРАНВЫС()-1);
       корень.classList.toggle('xpwawin', мало);
       /* Где полоса — сверху или снизу окна (см. `xpwadown` в стилях). Верхний
          отступ есть только у окна, заходящего под часы, то есть стоящего на
@@ -16159,7 +16175,7 @@ function зазорПодписи(){
 }
 function окноЧип(){
   try{
-    const экран=Math.round((screen&&screen.height)||0);
+    const экран=Math.round(ЭКРАНВЫС());
     const окно=Math.round(innerHeight);
     /* ТЕЛО МЕРЯЕМ ПО ФАКТУ И ПОКАЗЫВАЕМ ПЕРВЫМ. `innerHeight` в иконке на iOS
        врёт (известная беда Safari): 12.09.2026 он дал 894 при экране 956, и по
@@ -24471,7 +24487,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='16:49:24';</script>
+<script>window.__СБОРКА='17:05:31';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
@@ -24565,6 +24581,7 @@ document.addEventListener('keydown',e=>{
         'visualVP   '+R(vv.width||0)+'×'+R(vv.height||0)+'\n'+
         'vv.offTop  '+R(vv.offsetTop||0)+'  pageTop '+R(vv.pageTop||0)+'\n'+
         'screen     '+screen.width+'×'+screen.height+'\n'+
+        'масштаб    '+(Math.round(Math.min(screen.width,screen.height)/Math.min(innerWidth,innerHeight)*100))+'%  экран стр. '+(typeof ЭКРАНВЫС==='function'?ЭКРАНВЫС():'—')+'\n'+
         'забрал бр. '+(screen.height-innerHeight)+' (экран−окно: часы+панели)\n'+
         'забрал lvh '+(screen.height-(window.__lvh||0))+'  (по нему и решаем)\n'+
         'сборка     '+(window.__СБОРКА||'старая')+'\n'+
