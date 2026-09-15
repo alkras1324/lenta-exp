@@ -4963,7 +4963,7 @@ if (ДОКПРОКРУТКА) {
          не годится: 428×926 на iOS 18.6 даёт 47/34 при полосе снизу, а 16 Plus на
          iOS 26.1 — 0/34 при полосе сверху (Kobiton, 16.09.2026). */
       let верх=0;
-      try{ const з=document.createElement('div');
+      if(мало) try{ const з=document.createElement('div');
         з.style.cssText='position:fixed;top:0;left:0;width:0;visibility:hidden;height:env(safe-area-inset-top,0px)';
         (document.body||корень).appendChild(з); верх=з.offsetHeight; з.remove(); }catch(e){}
       корень.classList.toggle('xpwadown', !!(мало && верх>0));
@@ -24471,7 +24471,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='16:39:08';</script>
+<script>window.__СБОРКА='16:49:24';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
