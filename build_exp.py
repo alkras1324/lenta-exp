@@ -279,6 +279,12 @@ DIAG = r'''
         'safe t/b   '+h('p-sat')+' / '+h('p-sab')+'\n'+
         'scrollY    '+R(scrollY)+'\n'+
         'docH       '+d.scrollHeight+'\n'+
+        /* ТЯГА — ПИК ЗА СЕАНС, А НЕ МГНОВЕННОЕ ЗНАЧЕНИЕ. Во время утягивания
+           плашку читать некому: палец на экране, а числа возвращаются в ноль
+           раньше, чем поднимешь. Поэтому помним максимумы. `scrollY` растёт,
+           если у документа ЕСТЬ лишняя высота; `vv.offTop` — если это отскок
+           (документу крутить нечего, уезжает видимое окно). */
+        'тяга пик   scrollY '+R(window.__пикY||0)+'  vv.offTop '+R(window.__пикV||0)+'\n'+
         'idx        '+ix+'  поз '+(typeof позицияЛенты==='function'?R(позицияЛенты()*1000)/1000:'-')+'\n'+
         'видео      '+vstate()+'\n'+
         'slide top  '+st+'\n'+
@@ -361,6 +367,18 @@ DIAG = r'''
       document.querySelectorAll('.feed .slide.xcur').forEach(x=>{ if(x!==s) x.classList.remove('xcur'); });
       if(s&&!s.classList.contains('xcur')) s.classList.add('xcur'); }catch(e){}
   }
+  /* ПИК ТЯГИ СНИМАЕМ ЧАЩЕ ПЛАШКИ И ПРЯМО НА ДВИЖЕНИИ ПАЛЬЦА: четверти секунды
+     хватает, чтобы отскок начался и кончился между двумя рисовками. */
+  (function(){
+    const пик=()=>{ try{
+      const vv=window.visualViewport;
+      if(scrollY>(window.__пикY||0)) window.__пикY=scrollY;
+      if(vv&&Math.abs(vv.offsetTop||0)>(window.__пикV||0)) window.__пикV=Math.abs(vv.offsetTop||0);
+    }catch(e){} };
+    addEventListener('scroll',пик,{passive:true});
+    addEventListener('touchmove',пик,{passive:true});
+    if(window.visualViewport){ visualViewport.addEventListener('scroll',пик); visualViewport.addEventListener('resize',пик); }
+  })();
   /* плашка — 4 раза в секунду, не каждый кадр: не мешать листанию */
   setInterval(()=>{draw();edges();cur();fillSrc();},250);
 })();

@@ -198,6 +198,29 @@
      вся её механика — как у Lamoda. */
   html{height:100%;background:#241d19;}
   body{height:100%;background:#241d19;overflow-x:hidden;}
+  /* «ЕСТЬ СТЕКЛО»: КРАЙ ЛЕНТЫ БОЛЬШЕ НЕ ТЯНЕТ ЗА СОБОЙ ВЕСЬ ДОКУМЕНТ.
+     Владелец, 15.09.2026, вкладка Safari на iPhone: кадр нормальный, но
+     «вместо пролистывания к следующей карточке можно пальцем утянуть ВЕСЬ кадр
+     вверх — под часы и под полупрозрачную панель Safari».
+
+     Это не лишняя высота страницы: тело ростом ровно в окно (`height:100%` на
+     iOS считается от видимого окна), лишнему уезжать некуда. Это резиновый
+     отскок: `.feed` — внутренний скроллер, и на своём краю iOS передаёт тягу
+     ВЫШЕ по цепочке, документу. Документу крутить нечего, поэтому он отскакивает
+     целиком, вместе с кадром, а Safari на этом движении ещё и складывает свои
+     панели — отсюда ощущение, что страница «плавает под стеклом». Снап при этом
+     не срабатывает: палец тянет не ленту, а документ под ней.
+
+     Лечится ровно тем, для чего свойство и заведено: `contain` обрывает передачу
+     на краю ленты, `none` на корне запрещает отскок самому документу (второе
+     нужно, потому что тянуть можно и мимо ленты — за накладки и поля).
+     Плата — вкладка Safari перестаёт обновлять страницу потягиванием сверху.
+     Для ленты со снапом это не потеря: обновления там нет, а случайный рывок
+     вниз до сих пор уводил кадр под часы.
+
+     Режим документа (`?doc=1`) исключён намеренно: там документ — НАСТОЯЩИЙ
+     скроллер ленты, и запрещать ему отскок значит ломать саму прокрутку. */
+  html:not(.docscroll){overscroll-behavior:none;}
   /* ДОТЯГИВАЕМСЯ ДО НИЗА САМИ. Владелец, 11.09.2026: «а может это мы сами не
      дотягиваем?» — и переустановка иконки полосу не убрала, значит дело не в
      старых настройках окна. `height:100%` в standalone на iOS берётся от
@@ -357,7 +380,9 @@
   /* без размытия полупрозрачная шторка перестаёт отделять себя от ленты — делаем плотной */
   body.zoomed .sheet{background:rgba(16,14,13,.96);}
 
-  .feed{height:100%;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;}
+  .feed{height:100%;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;
+         /* `contain` — не украшение: разбор у `overscroll-behavior` на корне выше. */
+         overscroll-behavior:contain;}
   /* ПРОКРУТКА ДОКУМЕНТОМ — ОПЫТ ПО АДРЕСУ `?doc=1`, ПО УМОЛЧАНИЮ ВЫКЛЮЧЕН.
 
      Зачем. В иконке полный экран взят (чип владельца 956/956/956), а в браузере
@@ -24498,7 +24523,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='17:33:03';</script>
+<script>window.__СБОРКА='15:26:07';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
@@ -24602,6 +24627,12 @@ document.addEventListener('keydown',e=>{
         'safe t/b   '+h('p-sat')+' / '+h('p-sab')+'\n'+
         'scrollY    '+R(scrollY)+'\n'+
         'docH       '+d.scrollHeight+'\n'+
+        /* ТЯГА — ПИК ЗА СЕАНС, А НЕ МГНОВЕННОЕ ЗНАЧЕНИЕ. Во время утягивания
+           плашку читать некому: палец на экране, а числа возвращаются в ноль
+           раньше, чем поднимешь. Поэтому помним максимумы. `scrollY` растёт,
+           если у документа ЕСТЬ лишняя высота; `vv.offTop` — если это отскок
+           (документу крутить нечего, уезжает видимое окно). */
+        'тяга пик   scrollY '+R(window.__пикY||0)+'  vv.offTop '+R(window.__пикV||0)+'\n'+
         'idx        '+ix+'  поз '+(typeof позицияЛенты==='function'?R(позицияЛенты()*1000)/1000:'-')+'\n'+
         'видео      '+vstate()+'\n'+
         'slide top  '+st+'\n'+
@@ -24684,6 +24715,18 @@ document.addEventListener('keydown',e=>{
       document.querySelectorAll('.feed .slide.xcur').forEach(x=>{ if(x!==s) x.classList.remove('xcur'); });
       if(s&&!s.classList.contains('xcur')) s.classList.add('xcur'); }catch(e){}
   }
+  /* ПИК ТЯГИ СНИМАЕМ ЧАЩЕ ПЛАШКИ И ПРЯМО НА ДВИЖЕНИИ ПАЛЬЦА: четверти секунды
+     хватает, чтобы отскок начался и кончился между двумя рисовками. */
+  (function(){
+    const пик=()=>{ try{
+      const vv=window.visualViewport;
+      if(scrollY>(window.__пикY||0)) window.__пикY=scrollY;
+      if(vv&&Math.abs(vv.offsetTop||0)>(window.__пикV||0)) window.__пикV=Math.abs(vv.offsetTop||0);
+    }catch(e){} };
+    addEventListener('scroll',пик,{passive:true});
+    addEventListener('touchmove',пик,{passive:true});
+    if(window.visualViewport){ visualViewport.addEventListener('scroll',пик); visualViewport.addEventListener('resize',пик); }
+  })();
   /* плашка — 4 раза в секунду, не каждый кадр: не мешать листанию */
   setInterval(()=>{draw();edges();cur();fillSrc();},250);
 })();
