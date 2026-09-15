@@ -4195,15 +4195,21 @@
      Каталогу отдаём весь экран: `100vh` на этих телефонах равен 956. Прокрутка
      внутри (`.catin`) от этого не меняется, а таблетка стоит на своём месте — она
      в обвязке, не в каталоге. */
-  html.xpwawin .cat{bottom:auto!important;height:100vh!important;}
-  html.xpwawin .catin{bottom:auto!important;height:100vh!important;}
+  /* ТОЛЬКО КОГДА ПОЛОСА СНИЗУ (`xpwadown`, Kobiton 16.09.2026). iPhone 16 Plus на
+     iOS 26.1 отдал окно ПОД часами: окно 873 из 932 начинается с 59-й точки и
+     доходит до низа экрана (`safe-area-inset-bottom` 34). Там `100vh` утаскивал
+     каталог и таблетку на 59 точек за нижний край — ряд обрезан, таблетки не
+     видно. Сторону различаем по нижнему отступу: окно у нижней кромки его имеет,
+     окно с полосой снизу — нет. */
+  html.xpwawin.xpwadown .cat{bottom:auto!important;height:100vh!important;}
+  html.xpwawin.xpwadown .catin{bottom:auto!important;height:100vh!important;}
   /* И ТАБЛЕТКА В ПЛИТКЕ ОПУСКАЕТСЯ ТУДА ЖЕ (владелец 15.09.2026: «не опустился»).
      Каталог получил весь экран, а таблетка осталась в обвязке ростом в окно — и
      повисла на 62 точки выше низа, над обрезанным рядом карточек. Сдвигаем её на
      ту же разницу «экран минус окно». Только в плитке: в ленте рядом стоит строка
      покупки, и опускать её нельзя — она для того и держится окна, чтобы кнопку
      «Купить» было куда нажать. Сдвиг через `transform` — раскладку не трогает. */
-  html.xpwawin body.gridmode .tabbar{transform:translateY(calc(100vh - var(--xwin,100vh)));}
+  html.xpwawin.xpwadown body.gridmode .tabbar{transform:translateY(calc(100vh - var(--xwin,100vh)));}
   /* ПОЛОСА, КОТОРУЮ iOS НЕ ОТДАЛА ОКНУ, — ЗАКРАШИВАЕТСЯ КАДРОМ.
      Когда окно короче экрана (894 из 956), снизу остаётся глухая чёрная полоса в
      высоту часов: это уже не наше окно, и обычной разметкой туда не дотянуться.
@@ -4951,6 +4957,10 @@ if (ДОКПРОКРУТКА) {
          страховке делать нечего (прогон `browser_window_check`, 14.09.2026). */
       const мало=!!(сам && !корень.classList.contains('docscroll') && innerHeight<screen.height-1);
       корень.classList.toggle('xpwawin', мало);
+      /* Где полоса — сверху или снизу окна (см. `xpwadown` в стилях). Нижний
+         отступ есть только у окна, стоящего на нижней кромке экрана. */
+      const низ=parseInt(getComputedStyle(корень).getPropertyValue('--safe-bot'),10)||0;
+      корень.classList.toggle('xpwadown', !!(мало && низ<1));
       if(мало) корень.style.setProperty('--xwin', innerHeight+'px');
       else корень.style.removeProperty('--xwin');
     }catch(e){} };
@@ -24455,7 +24465,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='12:22:14';</script>
+<script>window.__СБОРКА='15:37:47';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
@@ -24576,7 +24586,11 @@ document.addEventListener('keydown',e=>{
             'catin скр  '+(c?Math.round(c.scrollTop)+' / '+Math.round(c.scrollHeight):'—')+'\n'+
             'таблетка   '+п('.tabbar')+'\n'+
             'до низа    '+(()=>{const t=document.querySelector('.tabbar');
-              return t?Math.round(screen.height-t.getBoundingClientRect().bottom):'—';})()+' (экран−низ таблетки)\n';
+              if(!t) return '—';
+              /* в экранных точках: окно начинается ниже часов, если полоса сверху */
+              const сверху=(d.classList.contains('xpwawin')&&!d.classList.contains('xpwadown'))?screen.height-innerHeight:0;
+              return Math.round(screen.height-сверху-t.getBoundingClientRect().bottom);})()+' (экран−низ таблетки)\n'+
+            'полоса     '+(d.classList.contains('xpwawin')?(d.classList.contains('xpwadown')?'снизу':'сверху'):'—')+'\n';
         })() : '')+
         'заливка    '+d.classList.contains('xpwawin')+'\n'+
         'coarse     '+matchMedia('(hover:none) and (pointer:coarse)').matches+'\n'+

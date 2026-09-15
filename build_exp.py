@@ -296,7 +296,11 @@ DIAG = r'''
             'catin скр  '+(c?Math.round(c.scrollTop)+' / '+Math.round(c.scrollHeight):'—')+'\n'+
             'таблетка   '+п('.tabbar')+'\n'+
             'до низа    '+(()=>{const t=document.querySelector('.tabbar');
-              return t?Math.round(screen.height-t.getBoundingClientRect().bottom):'—';})()+' (экран−низ таблетки)\n';
+              if(!t) return '—';
+              /* в экранных точках: окно начинается ниже часов, если полоса сверху */
+              const сверху=(d.classList.contains('xpwawin')&&!d.classList.contains('xpwadown'))?screen.height-innerHeight:0;
+              return Math.round(screen.height-сверху-t.getBoundingClientRect().bottom);})()+' (экран−низ таблетки)\n'+
+            'полоса     '+(d.classList.contains('xpwawin')?(d.classList.contains('xpwadown')?'снизу':'сверху'):'—')+'\n';
         })() : '')+
         'заливка    '+d.classList.contains('xpwawin')+'\n'+
         'coarse     '+matchMedia('(hover:none) and (pointer:coarse)').matches+'\n'+
