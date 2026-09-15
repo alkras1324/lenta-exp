@@ -273,6 +273,8 @@ DIAG = r'''
         'забрал бр. '+(screen.height-innerHeight)+' (экран−окно: часы+панели)\n'+
         'забрал lvh '+(screen.height-(window.__lvh||0))+'  (по нему и решаем)\n'+
         'сборка     '+(window.__СБОРКА||'старая')+'\n'+
+        /* дата версии самого шаблона ленты — см. `версияКода()` в build_exp.py */
+        'код        '+(window.__КОД||'—')+'\n'+
         'clientH    '+d.clientHeight+'\n'+
         'vh/svh     '+h('p-vh')+' / '+h('p-svh')+'\n'+
         'lvh/dvh    '+h('p-lvh')+' / '+h('p-dvh')+'\n'+
@@ -384,9 +386,49 @@ DIAG = r'''
 })();
 </script>
 '''
-import datetime
-МЕТКА = datetime.datetime.now().strftime('%H:%M:%S')
-html = html.replace('</body>', '<script>window.__СБОРКА=' + repr(МЕТКА) + ';</script>' + DIAG + '</body>') \
+import datetime, subprocess
+
+МЕТКА = datetime.datetime.now().strftime('%d.%m %H:%M:%S')
+
+
+def версияКода():
+    """Когда в последний раз менялся САМ шаблон ленты, а не когда его собрали.
+
+    Владелец, 15.09.2026: «нельзя ли указывать не только дату сборки ленты, но и
+    дату версии её кода». Две даты отвечают на два разных вопроса. `сборка` — не
+    кэш ли это: пересобрал, обновилось. `код` — тот ли это шаблон: пересобрать
+    можно и старый, и тогда свежая сборка показывает вчерашнюю ленту, а по одной
+    метке этого не видно. Берём дату и короткий хэш последнего коммита, тронувшего
+    файл шаблона, в ЕГО репозитории.
+
+    Без git (или файл вне репозитория) — время правки файла со знаком `~`: оно
+    честно говорит «точной версии не знаю», но всё равно отличает старый шаблон от
+    нового.
+    """
+    кат = os.path.dirname(os.path.abspath(TPL))
+    try:
+        out = subprocess.run(['git', '-C', кат, 'log', '-1', '--format=%cd %h',
+                              '--date=format:%d.%m %H:%M', '--', os.path.abspath(TPL)],
+                             capture_output=True, text=True, timeout=20)
+        метка = (out.stdout or '').strip()
+        if out.returncode == 0 and метка:
+            грязь = subprocess.run(['git', '-C', кат, 'status', '--porcelain', '--',
+                                    os.path.abspath(TPL)], capture_output=True, text=True, timeout=20)
+            # Несохранённая правка шаблона — коммит уже не описывает то, что собрано.
+            if (грязь.stdout or '').strip():
+                метка += ' +правки'
+            return метка
+    except Exception:
+        pass
+    try:
+        return '~' + datetime.datetime.fromtimestamp(os.path.getmtime(TPL)).strftime('%d.%m %H:%M')
+    except Exception:
+        return '—'
+
+
+КОД = версияКода()
+html = html.replace('</body>', '<script>window.__СБОРКА=' + repr(МЕТКА) +
+                    ';window.__КОД=' + repr(КОД) + ';</script>' + DIAG + '</body>') \
     if '</body>' in html else html + DIAG
 open(OUT, 'w', encoding='utf-8').write(html)
 print('ok', len(html))
