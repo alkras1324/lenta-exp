@@ -210,7 +210,17 @@ DIAG = r'''
     const fill=document.createElement('div'); fill.id='xfill';
     document.body.insertBefore(fill, document.body.firstChild);
   }catch(e){}
+  /* В ПЛИТКЕ ПЛАШКА ТОЖЕ НУЖНА (владелец 15.09.2026: «поставь на плитку
+     индикаторы те же, что на ленту, будем разбираться»). В ленте она живёт внутри
+     обвязки `#feedchrome`, а в плитке обвязка скрыта — вместе с ней пропадала и
+     плашка. В плитке держим её прямо в теле и прибиваем к окну. */
   function hostIt(){
+    const плитка=document.body.classList.contains('gridmode');
+    if(плитка){
+      if(el.parentNode!==document.body){ document.body.appendChild(el); }
+      el.style.position='fixed'; el.style.top='32%'; el.style.left='6px';
+      return;
+    }
     const host=document.getElementById('feedchrome');
     if(host&&el.parentNode!==host){ host.appendChild(el);
       el.style.position='absolute'; el.style.top='150px'; el.style.left='8px'; }
@@ -274,6 +284,20 @@ DIAG = r'''
         'slide h    '+sh+'\n'+
         'slide bot  '+sb+'\n'+
         'docscroll  '+d.classList.contains('docscroll')+'\n'+
+        /* ── ПЛИТКА ── (владелец 15.09.2026: разбираемся, почему каталог не до низа) */
+        (document.body.classList.contains('gridmode') ? (()=>{
+          const п=(s)=>{const e=document.querySelector(s); if(!e) return '—';
+            const r=e.getBoundingClientRect();
+            return Math.round(r.top)+'…'+Math.round(r.bottom)+' h'+Math.round(r.height);};
+          const c=document.querySelector('.catin');
+          return 'ПЛИТКА\n'+
+            'cat        '+п('.cat')+'\n'+
+            'catin      '+п('.catin')+'\n'+
+            'catin скр  '+(c?Math.round(c.scrollTop)+' / '+Math.round(c.scrollHeight):'—')+'\n'+
+            'таблетка   '+п('.tabbar')+'\n'+
+            'до низа    '+(()=>{const t=document.querySelector('.tabbar');
+              return t?Math.round(screen.height-t.getBoundingClientRect().bottom):'—';})()+' (экран−низ таблетки)\n';
+        })() : '')+
         'заливка    '+d.classList.contains('xpwawin')+'\n'+
         'coarse     '+matchMedia('(hover:none) and (pointer:coarse)').matches+'\n'+
         'standalone '+matchMedia('(display-mode:standalone)').matches+'\n'+
