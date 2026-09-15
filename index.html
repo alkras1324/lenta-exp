@@ -4199,8 +4199,8 @@
      iOS 26.1 отдал окно ПОД часами: окно 873 из 932 начинается с 59-й точки и
      доходит до низа экрана (`safe-area-inset-bottom` 34). Там `100vh` утаскивал
      каталог и таблетку на 59 точек за нижний край — ряд обрезан, таблетки не
-     видно. Сторону различаем по нижнему отступу: окно у нижней кромки его имеет,
-     окно с полосой снизу — нет. */
+     видно. Сторону различаем по ВЕРХНЕМУ отступу: он есть только у окна,
+     стоящего на верхней кромке (под часами), — тогда полоса снизу. */
   html.xpwawin.xpwadown .cat{bottom:auto!important;height:100vh!important;}
   html.xpwawin.xpwadown .catin{bottom:auto!important;height:100vh!important;}
   /* И ТАБЛЕТКА В ПЛИТКЕ ОПУСКАЕТСЯ ТУДА ЖЕ (владелец 15.09.2026: «не опустился»).
@@ -4957,10 +4957,16 @@ if (ДОКПРОКРУТКА) {
          страховке делать нечего (прогон `browser_window_check`, 14.09.2026). */
       const мало=!!(сам && !корень.classList.contains('docscroll') && innerHeight<screen.height-1);
       корень.classList.toggle('xpwawin', мало);
-      /* Где полоса — сверху или снизу окна (см. `xpwadown` в стилях). Нижний
-         отступ есть только у окна, стоящего на нижней кромке экрана. */
-      const низ=parseInt(getComputedStyle(корень).getPropertyValue('--safe-bot'),10)||0;
-      корень.classList.toggle('xpwadown', !!(мало && низ<1));
+      /* Где полоса — сверху или снизу окна (см. `xpwadown` в стилях). Верхний
+         отступ есть только у окна, заходящего под часы, то есть стоящего на
+         верхней кромке: тогда забранная полоса — снизу. Нижний отступ для этого
+         не годится: 428×926 на iOS 18.6 даёт 47/34 при полосе снизу, а 16 Plus на
+         iOS 26.1 — 0/34 при полосе сверху (Kobiton, 16.09.2026). */
+      let верх=0;
+      try{ const з=document.createElement('div');
+        з.style.cssText='position:fixed;top:0;left:0;width:0;visibility:hidden;height:env(safe-area-inset-top,0px)';
+        (document.body||корень).appendChild(з); верх=з.offsetHeight; з.remove(); }catch(e){}
+      корень.classList.toggle('xpwadown', !!(мало && верх>0));
       if(мало) корень.style.setProperty('--xwin', innerHeight+'px');
       else корень.style.removeProperty('--xwin');
     }catch(e){} };
@@ -24465,7 +24471,7 @@ document.addEventListener('keydown',e=>{
   run().catch(function(e){ send('fail', {where:'исключение', message:String(e && e.message)}); });
 })();
 </script>
-<script>window.__СБОРКА='15:37:47';</script>
+<script>window.__СБОРКА='16:39:08';</script>
 <div id="xdiag" style="position:fixed;left:6px;top:32%;z-index:99999;pointer-events:none;
  background:rgba(0,0,0,.6);color:#0f0;font:8.5px/1.2 ui-monospace,Menlo,monospace;
  padding:4px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-all;max-width:70vw"></div>
