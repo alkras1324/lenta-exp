@@ -1,13 +1,25 @@
 (function () {
   'use strict';
 
-  if (window.__LAMPA_TORR_DOWNLOAD_PLUGIN_V4__) return;
-  window.__LAMPA_TORR_DOWNLOAD_PLUGIN_V4__ = true;
+  if (window.__LAMPA_TORR_DOWNLOAD_PLUGIN_V5__) return;
+  window.__LAMPA_TORR_DOWNLOAD_PLUGIN_V5__ = true;
+
+  function safeDecode(s) {
+    try { return decodeURIComponent(s); } catch (e) { return s; }
+  }
 
   function fileName(element) {
-    var name = (element && (element.path || element.path_human || element.title || element.fname)) || 'video.mkv';
-    name = String(name).split('\\').pop().split('/').pop();
-    return name.replace(/[\u0000-\u001f<>:"|?*]/g, '_');
+    var raw = (element && (element.path_human || element.path || element.title || element.fname)) || 'video.mkv';
+    var name = safeDecode(String(raw)).split('\\').pop().split('/').pop();
+
+    // If the human title has no extension, borrow it from the real path.
+    if (name.indexOf('.') < 0 && element && element.path) {
+      var base = safeDecode(String(element.path)).split('\\').pop().split('/').pop();
+      var m = base.match(/(\.[A-Za-z0-9]{2,5})$/);
+      if (m) name += m[1];
+    }
+
+    return name.replace(/[\u0000-\u001f<>:"|?*]/g, '_').trim() || 'video.mkv';
   }
 
   function directPlayUrl(element) {
@@ -17,7 +29,18 @@
       var id = element.id != null ? element.id : u.searchParams.get('index');
 
       if (hash && id != null && id !== '') {
-        return u.protocol + '//' + u.host + '/play/' + encodeURIComponent(hash) + '/' + encodeURIComponent(String(id));
+        var protocol = u.protocol;
+        var host = u.host;
+
+        // Lampa needs HTTPS in the browser, but VLC downloads more reliably
+        // from TorrServer's plain HTTP listener (avoids self-signed TLS issues).
+        if (u.protocol === 'https:' && (u.port === '8091' || !u.port)) {
+          protocol = 'http:';
+          host = u.hostname + ':8090';
+        }
+
+        return protocol + '//' + host + '/play/' +
+          encodeURIComponent(hash) + '/' + encodeURIComponent(String(id));
       }
     } catch (e) {}
 
@@ -35,12 +58,12 @@
   }
 
   function injectStyle() {
-    if (document.getElementById('lampa-torr-download-style-v4')) return;
+    if (document.getElementById('lampa-torr-download-style-v5')) return;
 
     var style = document.createElement('style');
-    style.id = 'lampa-torr-download-style-v4';
+    style.id = 'lampa-torr-download-style-v5';
     style.textContent = [
-      '.lampa-torr-download-btn-v4{',
+      '.lampa-torr-download-btn-v5{',
       '  flex-shrink:0;',
       '  margin-left:.7em;',
       '  padding:.38em .65em;',
@@ -55,9 +78,9 @@
       '  -webkit-user-select:none;',
       '  user-select:none;',
       '}',
-      '.lampa-torr-download-btn-v4:active{background:rgba(255,255,255,.3);}',
+      '.lampa-torr-download-btn-v5:active{background:rgba(255,255,255,.3);}',
       '@media screen and (max-width:600px){',
-      '  .lampa-torr-download-btn-v4{font-size:.95em;padding:.45em .55em;}',
+      '  .lampa-torr-download-btn-v5{font-size:.95em;padding:.45em .55em;}',
       '}'
     ].join('');
     document.head.appendChild(style);
@@ -68,10 +91,10 @@
 
     try {
       var item = e.item;
-      if (item.find && item.find('.lampa-torr-download-btn-v4').length) return;
+      if (item.find && item.find('.lampa-torr-download-btn-v5').length) return;
 
       var a = document.createElement('a');
-      a.className = 'lampa-torr-download-btn-v4';
+      a.className = 'lampa-torr-download-btn-v5';
       a.textContent = '↓ Скачать';
       a.href = vlcDownloadUrl(e.element);
 
@@ -92,7 +115,7 @@
     injectStyle();
     if (!window.Lampa || !Lampa.Listener) return;
     Lampa.Listener.follow('torrent_file', onTorrentFile);
-    if (Lampa.Noty) Lampa.Noty.show('Torr Download v4 загружен');
+    if (Lampa.Noty) Lampa.Noty.show('Torr Download v5 загружен');
   }
 
   if (window.Lampa && Lampa.Listener) init();
